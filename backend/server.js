@@ -1,4 +1,9 @@
-// server.js - Backend API para Sistema de Chamadas (MySQL)
+// ============================================
+// SERVER.JS - Sistema de Recepção Empresarial
+// Backend: Node.js + Express + MySQL
+// Conforme Documentação Oficial
+// ============================================
+
 const express = require('express');
 const cors = require('cors');
 const mysql = require('mysql2/promise');
@@ -6,7 +11,9 @@ const mysql = require('mysql2/promise');
 const app = express();
 const port = 3001;
 
-// Configuração do pool de conexões MySQL
+// ============================================
+// CONFIGURAÇÃO DO POOL DE CONEXÕES MYSQL
+// ============================================
 const pool = mysql.createPool({
   host: 'localhost',
   user: 'root',
@@ -14,144 +21,736 @@ const pool = mysql.createPool({
   database: 'sistema_chamadas',
   waitForConnections: true,
   connectionLimit: 10,
-  queueLimit: 0
+  queueLimit: 0,
+  timezone: '-03:00' // Ajuste para seu fuso horário
 });
 
+// ============================================
+// MIDDLEWARES
+// ============================================
 app.use(cors());
 app.use(express.json());
 
-// ADICIONE ESTAS LINHAS AQUI:
+// Logger de requisições
 app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
   next();
 });
 
-// Criar tabela se não existir
-const initDB = async () => {
-  const createTableQuery = `
-    CREATE TABLE IF NOT EXISTS chamadas (
-      id INT AUTO_INCREMENT PRIMARY KEY,
-      nome VARCHAR(255) NOT NULL,
-      descricao TEXT,
-      setor VARCHAR(100) NOT NULL,
-      data_hora TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      status VARCHAR(50) DEFAULT 'chamando',
-      INDEX idx_data_hora (data_hora DESC),
-      INDEX idx_setor (setor),
-      INDEX idx_status (status)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-  `;
-  
+// ============================================
+// ROTA: Status do Servidor e Banco
+// ============================================
+app.get('/api/status', async (req, res) => {
   try {
-    await pool.query(createTableQuery);
-    console.log('Tabela criada/verificada com sucesso');
+    const [rows] = await pool.query('SELECT COUNT(*) as total FROM usuarios');
+    res.json({ 
+      status: 'online', 
+      message: 'Servidor e banco de dados conectados',
+      usuarios: rows[0].total,
+      timestamp: new Date().toISOString()
+    });
   } catch (err) {
-    console.error('Erro ao criar tabela:', err);
+    console.error('Erro na conexão:', err);
+    res.status(500).json({ 
+      status: 'error', 
+      message: 'Erro na conexão com o banco de dados' 
+    });
   }
-};
+});
 
-// Inicializar banco de dados
-initDB();
+// ============================================
+// AUTENTICAÇÃO - RF006
+// ============================================
 
-// Rota para criar uma nova chamada
-app.post('/api/chamadas', async (req, res) => {
-  const { nome, descricao, setor } = req.body;
+/**
+ * POST /api/auth/login
+ * RF006 - Controle de Acesso
+ * RF007 - Perfis de Usuário
+ */
+app.post('/api/auth/login', async (req, res) => {
+  const { usuario, senha } = req.body;
+  
+  // Validação básica
+  if (!usuario || !senha) {
+    return res.status(400).json({ 
+      error: 'Usuário e senha são obrigatórios' 
+    });
+  }
+
+  try {
+    const [rows] = await pool.query(
+      `SELECT 
+        u.id, 
+        u.nome, 
+        u.login, 
+        u.perfil,
+        u.departamento_id,
+        d.nome as departamento_nome
+      FROM usuarios u
+      LEFT JOIN departamentos d ON u.departamento_id = d.id
+      WHERE u.login = ? AND u.senha = ? AND u.ativo = 1`,
+      [usuario, senha]
+    );
+
+    if (rows.length === 0) {
+      return res.status(401).json({ 
+        error: 'Usuário ou senha inválidos' 
+      });
+    }
+
+    const user = rows[0];
+    
+    // Log de acesso
+    console.log(`Login bem-sucedido: ${user.nome} (${user.perfil})`);
+
+    res.json({
+      id: user.id,
+      nome: user.nome,
+      login: user.login,
+      perfil: user.perfil,
+      departamento_id: user.departamento_id,
+      departamento_nome: user.departamento_nome,
+      tipo_acesso: user.perfil // Compatibilidade com código React antigo
+    });
+  } catch (err) {
+    console.error('Erro ao fazer login:', err);
+    res.status(500).json({ error: 'Erro ao processar login' });
+  }
+});
+
+// ============================================
+// VISITANTES - RF001
+// ============================================
+
+/**
+ * GET /api/visitantes
+ * Lista todos os visitantes cadastrados
+ */
+app.get('/api/visitantes', async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT 
+        id, 
+        nome, 
+        cpf, 
+        DATE_FORMAT(data_cadastro, '%d/%m/%Y %H:%i') as data_cadastro,
+        ativo
+      FROM visitantes 
+      WHERE ativo = 1
+      ORDER BY nome ASC`
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error('Erro ao listar visitantes:', err);
+    res.status(500).json({ error: 'Erro ao listar visitantes' });
+  }
+});
+
+/**
+ * GET /api/visitantes/:cpf
+ * Busca visitante por CPF
+ */
+app.get('/api/visitantes/:cpf', async (req, res) => {
+  const { cpf } = req.params;
   
   try {
-    const [result] = await pool.query(
-      'INSERT INTO chamadas (nome, descricao, setor) VALUES (?, ?, ?)',
-      [nome.toUpperCase(), descricao, setor]
+    const [rows] = await pool.query(
+      'SELECT * FROM visitantes WHERE cpf = ?',
+      [cpf.replace(/\D/g, '')] // Remove formatação
     );
     
-    const [rows] = await pool.query(
-      'SELECT * FROM chamadas WHERE id = ?',
-      [result.insertId]
-    );
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Visitante não encontrado' });
+    }
     
     res.json(rows[0]);
   } catch (err) {
-    console.error('Erro ao criar chamada:', err);
-    res.status(500).json({ error: 'Erro ao criar chamada' });
+    console.error('Erro ao buscar visitante:', err);
+    res.status(500).json({ error: 'Erro ao buscar visitante' });
   }
 });
 
-app.post('/api/auth/login', async (req, res) => {
-  const { usuario, senha } = req.body;
-  const [rows] = await pool.query(
-    'SELECT id, nome, usuario, tipo_acesso FROM operadores WHERE usuario = ? AND senha = ? AND ativo = 1',
-    [usuario, senha]
-  );
+// ============================================
+// VISITAS - RF001, RF002, RF003, RF005
+// ============================================
 
-  if (rows.length === 0) {
-    return res.status(401).json({ error: 'Usuário ou senha inválidos' });
+/**
+ * POST /api/visitas
+ * RF001 - Cadastro de Visitantes
+ * Usa a stored procedure sp_registrar_visita
+ */
+app.post('/api/visitas', async (req, res) => {
+  const { nome, cpf, departamento_id, motivo, observacao, usuario_id } = req.body;
+  
+  // Validação
+  if (!nome || !cpf || !departamento_id) {
+    return res.status(400).json({ 
+      error: 'Nome, CPF e departamento são obrigatórios' 
+    });
   }
 
-  res.json(rows[0]);
+  try {
+    // Remove formatação do CPF
+    const cpfLimpo = cpf.replace(/\D/g, '');
+    
+    // Valida CPF (11 dígitos)
+    if (cpfLimpo.length !== 11) {
+      return res.status(400).json({ error: 'CPF inválido' });
+    }
+
+    // Chama a stored procedure
+    const [result] = await pool.query(
+      `CALL sp_registrar_visita(?, ?, ?, ?, ?, ?, @visita_id, @visitante_id)`,
+      [cpfLimpo, nome, departamento_id, motivo, observacao, usuario_id]
+    );
+
+    // Busca os IDs retornados
+    const [ids] = await pool.query('SELECT @visita_id as visita_id, @visitante_id as visitante_id');
+    
+    // Busca a visita completa
+    const [visita] = await pool.query(
+      'SELECT * FROM visitas_completas WHERE visita_id = ?',
+      [ids[0].visita_id]
+    );
+
+    console.log(`Nova visita registrada: ${nome} -> ${visita[0].departamento_nome}`);
+
+    res.status(201).json(visita[0]);
+  } catch (err) {
+    console.error('Erro ao registrar visita:', err);
+    res.status(500).json({ error: 'Erro ao registrar visita' });
+  }
 });
 
+/**
+ * GET /api/visitas
+ * RF005 - Histórico de Visitas
+ * RF009 - Relatórios e Consultas
+ */
+app.get('/api/visitas', async (req, res) => {
+  const { status, departamento_id, data_inicio, data_fim, cpf } = req.query;
+  
+  try {
+    let query = 'SELECT * FROM visitas_completas WHERE 1=1';
+    const params = [];
 
-// Rota para obter a última chamada (para o display)
-app.get('/api/chamadas/ultima', async (req, res) => {
+    // Filtros opcionais
+    if (status) {
+      query += ' AND status = ?';
+      params.push(status);
+    }
+
+    if (departamento_id) {
+      query += ' AND departamento_id = ?';
+      params.push(departamento_id);
+    }
+
+    if (cpf) {
+      query += ' AND visitante_cpf = ?';
+      params.push(cpf.replace(/\D/g, ''));
+    }
+
+    if (data_inicio && data_fim) {
+      query += ' AND DATE(hora_chegada) BETWEEN ? AND ?';
+      params.push(data_inicio, data_fim);
+    }
+
+    query += ' ORDER BY hora_chegada DESC LIMIT 100';
+
+    const [rows] = await pool.query(query, params);
+    res.json(rows);
+  } catch (err) {
+    console.error('Erro ao buscar visitas:', err);
+    res.status(500).json({ error: 'Erro ao buscar visitas' });
+  }
+});
+
+/**
+ * GET /api/visitas/aguardando/:departamento_id
+ * RF002 - Consulta de Visitantes em Espera
+ */
+app.get('/api/visitas/aguardando/:departamento_id', async (req, res) => {
+  const { departamento_id } = req.params;
+  
   try {
     const [rows] = await pool.query(
-      'SELECT * FROM chamadas ORDER BY data_hora DESC LIMIT 1'
+      `SELECT * FROM visitas_completas 
+      WHERE status = 'aguardando' 
+      AND departamento_id = ?
+      ORDER BY hora_chegada ASC`,
+      [departamento_id]
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error('Erro ao buscar visitas aguardando:', err);
+    res.status(500).json({ error: 'Erro ao buscar visitas' });
+  }
+});
+
+/**
+ * GET /api/visitas/ultima
+ * RF003 - Chamada de Visitante
+ * RF004 - Atualização Automática (para o painel)
+ */
+app.get('/api/visitas/ultima', async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT * FROM visitas_completas 
+      WHERE status = 'chamado'
+      ORDER BY hora_chamada DESC 
+      LIMIT 1`
     );
     
     res.json(rows[0] || null);
   } catch (err) {
     console.error('Erro ao buscar última chamada:', err);
-    res.status(500).json({ error: 'Erro ao buscar chamada' });
+    res.status(500).json({ error: 'Erro ao buscar última chamada' });
   }
 });
 
-// Rota para obter histórico de chamadas
-app.get('/api/chamadas', async (req, res) => {
-  try {
-    const [rows] = await pool.query(
-      'SELECT * FROM chamadas ORDER BY data_hora DESC LIMIT 50'
-    );
-    
-    res.json(rows);
-  } catch (err) {
-    console.error('Erro ao buscar chamadas:', err);
-    res.status(500).json({ error: 'Erro ao buscar chamadas' });
-  }
-});
-
-// Rota para atualizar status da chamada
-app.put('/api/chamadas/:id', async (req, res) => {
+/**
+ * PUT /api/visitas/:id/chamar
+ * RF003 - Chamada de Visitante
+ */
+app.put('/api/visitas/:id/chamar', async (req, res) => {
   const { id } = req.params;
-  const { status } = req.body;
+  
+  try {
+    // Atualiza status para 'chamado'
+    await pool.query(
+      `UPDATE visitas 
+      SET status = 'chamado'
+      WHERE id = ? AND status = 'aguardando'`,
+      [id]
+    );
+
+    // Busca a visita atualizada
+    const [rows] = await pool.query(
+      'SELECT * FROM visitas_completas WHERE visita_id = ?',
+      [id]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Visita não encontrada' });
+    }
+
+    console.log(`Chamada realizada: ${rows[0].visitante_nome}`);
+
+    res.json(rows[0]);
+  } catch (err) {
+    console.error('Erro ao chamar visitante:', err);
+    res.status(500).json({ error: 'Erro ao chamar visitante' });
+  }
+});
+
+/**
+ * PUT /api/visitas/:id/atender
+ * RF008 - Encerramento de Atendimento
+ */
+app.put('/api/visitas/:id/atender', async (req, res) => {
+  const { id } = req.params;
   
   try {
     await pool.query(
-      'UPDATE chamadas SET status = ? WHERE id = ?',
-      [status, id]
-    );
-    
-    const [rows] = await pool.query(
-      'SELECT * FROM chamadas WHERE id = ?',
+      `UPDATE visitas 
+      SET status = 'atendido'
+      WHERE id = ?`,
       [id]
     );
-    
+
+    const [rows] = await pool.query(
+      'SELECT * FROM visitas_completas WHERE visita_id = ?',
+      [id]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Visita não encontrada' });
+    }
+
+    console.log(`Atendimento finalizado: ${rows[0].visitante_nome}`);
+
     res.json(rows[0]);
   } catch (err) {
-    console.error('Erro ao atualizar chamada:', err);
-    res.status(500).json({ error: 'Erro ao atualizar chamada' });
+    console.error('Erro ao finalizar atendimento:', err);
+    res.status(500).json({ error: 'Erro ao finalizar atendimento' });
   }
 });
 
-// Rota de teste de conexão
-app.get('/api/status', async (req, res) => {
+/**
+ * DELETE /api/visitas/:id
+ * RF010 - Edição e Cancelamento de Registros
+ */
+app.delete('/api/visitas/:id', async (req, res) => {
+  const { id } = req.params;
+  
+  try {
+    // Verifica se a visita existe e não foi atendida
+    const [visita] = await pool.query(
+      'SELECT status FROM visitas WHERE id = ?',
+      [id]
+    );
+
+    if (visita.length === 0) {
+      return res.status(404).json({ error: 'Visita não encontrada' });
+    }
+
+    if (visita[0].status === 'atendido') {
+      return res.status(400).json({ 
+        error: 'Não é possível cancelar visita já atendida' 
+      });
+    }
+
+    await pool.query('DELETE FROM visitas WHERE id = ?', [id]);
+    
+    console.log(`Visita cancelada: ID ${id}`);
+
+    res.json({ message: 'Visita cancelada com sucesso' });
+  } catch (err) {
+    console.error('Erro ao cancelar visita:', err);
+    res.status(500).json({ error: 'Erro ao cancelar visita' });
+  }
+});
+
+// ============================================
+// USUÁRIOS - CRUD (Apenas Administradores)
+// ============================================
+
+/**
+ * GET /api/usuarios
+ * Lista todos os usuários
+ */
+app.get('/api/usuarios', async (req, res) => {
+  try {
+    const [rows] = await pool.query(`
+      SELECT 
+        u.id,
+        u.nome,
+        u.login,
+        u.perfil,
+        u.departamento_id,
+        d.nome as departamento_nome,
+        u.ativo,
+        u.created_at
+      FROM usuarios u
+      LEFT JOIN departamentos d ON u.departamento_id = d.id
+      ORDER BY u.created_at DESC
+    `);
+    res.json(rows);
+  } catch (err) {
+    console.error('Erro ao listar usuários:', err);
+    res.status(500).json({ error: 'Erro ao listar usuários' });
+  }
+});
+
+/**
+ * POST /api/usuarios
+ * Criar novo usuário
+ */
+app.post('/api/usuarios', async (req, res) => {
+  const { nome, login, senha, perfil, departamento_id } = req.body;
+  
+  // Validação
+  if (!nome || !login || !senha || !perfil) {
+    return res.status(400).json({ 
+      error: 'Nome, login, senha e perfil são obrigatórios' 
+    });
+  }
+
+  // Validar perfil
+  const perfisValidos = ['recepcionista', 'departamento', 'painel', 'administrador'];
+  if (!perfisValidos.includes(perfil)) {
+    return res.status(400).json({ error: 'Perfil inválido' });
+  }
+
+  try {
+    // Verificar se login já existe
+    const [existe] = await pool.query(
+      'SELECT id FROM usuarios WHERE login = ?',
+      [login]
+    );
+
+    if (existe.length > 0) {
+      return res.status(400).json({ error: 'Login já existe' });
+    }
+
+    // Criar usuário
+    const [result] = await pool.query(
+      `INSERT INTO usuarios (nome, login, senha, perfil, departamento_id, ativo) 
+       VALUES (?, ?, ?, ?, ?, 1)`,
+      [nome, login, senha, perfil, departamento_id || null]
+    );
+
+    // Buscar usuário criado
+    const [usuario] = await pool.query(
+      `SELECT 
+        u.id, u.nome, u.login, u.perfil, u.departamento_id,
+        d.nome as departamento_nome, u.ativo
+       FROM usuarios u
+       LEFT JOIN departamentos d ON u.departamento_id = d.id
+       WHERE u.id = ?`,
+      [result.insertId]
+    );
+
+    console.log(`Novo usuário criado: ${nome} (${login})`);
+
+    res.status(201).json(usuario[0]);
+  } catch (err) {
+    console.error('Erro ao criar usuário:', err);
+    res.status(500).json({ error: 'Erro ao criar usuário' });
+  }
+});
+
+/**
+ * PUT /api/usuarios/:id
+ * Atualizar usuário
+ */
+app.put('/api/usuarios/:id', async (req, res) => {
+  const { id } = req.params;
+  const { nome, login, senha, perfil, departamento_id, ativo } = req.body;
+
+  try {
+    // Verificar se usuário existe
+    const [usuarioExiste] = await pool.query(
+      'SELECT id FROM usuarios WHERE id = ?',
+      [id]
+    );
+
+    if (usuarioExiste.length === 0) {
+      return res.status(404).json({ error: 'Usuário não encontrado' });
+    }
+
+    // Verificar se login já está em uso por outro usuário
+    if (login) {
+      const [loginEmUso] = await pool.query(
+        'SELECT id FROM usuarios WHERE login = ? AND id != ?',
+        [login, id]
+      );
+
+      if (loginEmUso.length > 0) {
+        return res.status(400).json({ error: 'Login já está em uso' });
+      }
+    }
+
+    // Construir query de atualização dinamicamente
+    const campos = [];
+    const valores = [];
+
+    if (nome !== undefined) {
+      campos.push('nome = ?');
+      valores.push(nome);
+    }
+    if (login !== undefined) {
+      campos.push('login = ?');
+      valores.push(login);
+    }
+    if (senha !== undefined && senha.trim() !== '') {
+      campos.push('senha = ?');
+      valores.push(senha);
+    }
+    if (perfil !== undefined) {
+      campos.push('perfil = ?');
+      valores.push(perfil);
+    }
+    if (departamento_id !== undefined) {
+      campos.push('departamento_id = ?');
+      valores.push(departamento_id || null);
+    }
+    if (ativo !== undefined) {
+      campos.push('ativo = ?');
+      valores.push(ativo ? 1 : 0);
+    }
+
+    if (campos.length === 0) {
+      return res.status(400).json({ error: 'Nenhum campo para atualizar' });
+    }
+
+    valores.push(id);
+
+    await pool.query(
+      `UPDATE usuarios SET ${campos.join(', ')} WHERE id = ?`,
+      valores
+    );
+
+    // Buscar usuário atualizado
+    const [usuario] = await pool.query(
+      `SELECT 
+        u.id, u.nome, u.login, u.perfil, u.departamento_id,
+        d.nome as departamento_nome, u.ativo
+       FROM usuarios u
+       LEFT JOIN departamentos d ON u.departamento_id = d.id
+       WHERE u.id = ?`,
+      [id]
+    );
+
+    console.log(`Usuário atualizado: ${usuario[0].nome} (ID: ${id})`);
+
+    res.json(usuario[0]);
+  } catch (err) {
+    console.error('Erro ao atualizar usuário:', err);
+    res.status(500).json({ error: 'Erro ao atualizar usuário' });
+  }
+});
+
+/**
+ * DELETE /api/usuarios/:id
+ * Deletar usuário (soft delete - apenas desativa)
+ */
+app.delete('/api/usuarios/:id', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    // Verificar se não está tentando deletar o próprio usuário admin
+    const [usuario] = await pool.query(
+      'SELECT login FROM usuarios WHERE id = ?',
+      [id]
+    );
+
+    if (usuario.length === 0) {
+      return res.status(404).json({ error: 'Usuário não encontrado' });
+    }
+
+    if (usuario[0].login === 'admin') {
+      return res.status(400).json({ 
+        error: 'Não é possível deletar o usuário administrador principal' 
+      });
+    }
+
+    // Soft delete - apenas desativa
+    await pool.query(
+      'UPDATE usuarios SET ativo = 0 WHERE id = ?',
+      [id]
+    );
+
+    console.log(`Usuário desativado: ${usuario[0].login} (ID: ${id})`);
+
+    res.json({ message: 'Usuário desativado com sucesso' });
+  } catch (err) {
+    console.error('Erro ao deletar usuário:', err);
+    res.status(500).json({ error: 'Erro ao deletar usuário' });
+  }
+});
+
+// ============================================
+// DEPARTAMENTOS
+// ============================================
+
+/**
+ * GET /api/departamentos
+ * Lista todos os departamentos
+ */
+app.get('/api/departamentos', async (req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT * FROM departamentos ORDER BY nome');
+    res.json(rows);
+  } catch (err) {
+    console.error('Erro ao listar departamentos:', err);
+    res.status(500).json({ error: 'Erro ao listar departamentos' });
+  }
+});
+
+// ============================================
+// RELATÓRIOS - RF009
+// ============================================
+
+/**
+ * GET /api/relatorios/dia
+ * Estatísticas do dia atual
+ */
+app.get('/api/relatorios/dia', async (req, res) => {
+  try {
+    const [rows] = await pool.query(`
+      SELECT 
+        departamento_nome,
+        COUNT(*) as total_visitas,
+        SUM(CASE WHEN status = 'atendido' THEN 1 ELSE 0 END) as atendidos,
+        SUM(CASE WHEN status = 'chamado' THEN 1 ELSE 0 END) as chamados,
+        SUM(CASE WHEN status = 'aguardando' THEN 1 ELSE 0 END) as aguardando
+      FROM visitas_completas
+      WHERE DATE(hora_chegada) = CURDATE()
+      GROUP BY departamento_id, departamento_nome
+    `);
+    res.json(rows);
+  } catch (err) {
+    console.error('Erro ao gerar relatório:', err);
+    res.status(500).json({ error: 'Erro ao gerar relatório' });
+  }
+});
+
+/**
+ * GET /api/relatorios/periodo
+ * Relatório por período
+ */
+app.get('/api/relatorios/periodo', async (req, res) => {
+  const { data_inicio, data_fim } = req.query;
+  
+  if (!data_inicio || !data_fim) {
+    return res.status(400).json({ 
+      error: 'data_inicio e data_fim são obrigatórios' 
+    });
+  }
+
+  try {
+    const [rows] = await pool.query(`
+      SELECT 
+        DATE(hora_chegada) as data,
+        departamento_nome,
+        COUNT(*) as total_visitas,
+        SUM(CASE WHEN status = 'atendido' THEN 1 ELSE 0 END) as atendidos
+      FROM visitas_completas
+      WHERE DATE(hora_chegada) BETWEEN ? AND ?
+      GROUP BY DATE(hora_chegada), departamento_id, departamento_nome
+      ORDER BY data DESC, departamento_nome
+    `, [data_inicio, data_fim]);
+    
+    res.json(rows);
+  } catch (err) {
+    console.error('Erro ao gerar relatório de período:', err);
+    res.status(500).json({ error: 'Erro ao gerar relatório' });
+  }
+});
+
+// ============================================
+// ROTA 404
+// ============================================
+app.use((req, res) => {
+  res.status(404).json({ 
+    error: 'Rota não encontrada',
+    path: req.path 
+  });
+});
+
+// ============================================
+// INICIALIZAÇÃO DO SERVIDOR
+// ============================================
+app.listen(port, "0.0.0.0", async () => {
+  console.log('================================================');
+  console.log('🚀 SISTEMA DE RECEPÇÃO EMPRESARIAL');
+  console.log('================================================');
+  console.log(`✅ Servidor rodando em http://192.167.2.41:${port}`);
+  console.log(`⏰ Iniciado em: ${new Date().toLocaleString('pt-BR')}`);
+  
+  // Testa conexão com banco
   try {
     await pool.query('SELECT 1');
-    res.json({ status: 'ok', message: 'Banco de dados conectado' });
+    console.log('✅ Banco de dados conectado');
   } catch (err) {
-    res.status(500).json({ status: 'error', message: 'Erro na conexão' });
+    console.error('❌ Erro ao conectar ao banco:', err.message);
   }
+  
+  console.log('================================================');
+  console.log('📋 Endpoints disponíveis:');
+  console.log('   GET  /api/status');
+  console.log('   POST /api/auth/login');
+  console.log('   POST /api/visitas');
+  console.log('   GET  /api/visitas');
+  console.log('   GET  /api/visitas/ultima');
+  console.log('   GET  /api/visitas/aguardando/:departamento_id');
+  console.log('   PUT  /api/visitas/:id/chamar');
+  console.log('   PUT  /api/visitas/:id/atender');
+  console.log('   DELETE /api/visitas/:id');
+  console.log('   GET  /api/departamentos');
+  console.log('   GET  /api/visitantes');
+  console.log('   GET  /api/relatorios/dia');
+  console.log('   GET  /api/relatorios/periodo');
+  console.log('================================================');
 });
-
-app.listen(port, "0.0.0.0", () => {
-  console.log("Servidor rodando em http://192.167.2.41:3001");
-});
-
