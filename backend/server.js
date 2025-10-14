@@ -296,7 +296,8 @@ app.get('/api/visitas/ultima', async (req, res) => {
   try {
     const [rows] = await pool.query(
       `SELECT * FROM visitas_completas 
-      WHERE status = 'chamado'
+      WHERE status = 'atendido'
+        AND hora_chamada IS NOT NULL
       ORDER BY hora_chamada DESC 
       LIMIT 1`
     );
