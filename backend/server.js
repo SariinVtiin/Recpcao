@@ -311,18 +311,27 @@ app.get('/api/visitas/ultima', async (req, res) => {
 /**
  * PUT /api/visitas/:id/chamar
  * RF003 - Chamada de Visitante
+ * Atualiza status para 'atendido' (vai direto para histórico)
  */
 app.put('/api/visitas/:id/chamar', async (req, res) => {
   const { id } = req.params;
   
   try {
-    // Atualiza status para 'chamado'
-    await pool.query(
+    console.log(`Tentando chamar visita ID: ${id}`);
+    
+    // Atualiza status para 'atendido' (sai da fila)
+    const [result] = await pool.query(
       `UPDATE visitas 
-      SET status = 'chamado'
+      SET status = 'atendido', hora_chamada = NOW()
       WHERE id = ? AND status = 'aguardando'`,
       [id]
     );
+
+    console.log(`Linhas afetadas: ${result.affectedRows}`);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Visita não encontrada ou já foi chamada' });
+    }
 
     // Busca a visita atualizada
     const [rows] = await pool.query(
@@ -331,7 +340,7 @@ app.put('/api/visitas/:id/chamar', async (req, res) => {
     );
 
     if (rows.length === 0) {
-      return res.status(404).json({ error: 'Visita não encontrada' });
+      return res.status(404).json({ error: 'Visita não encontrada após atualização' });
     }
 
     console.log(`Chamada realizada: ${rows[0].visitante_nome}`);
@@ -339,13 +348,56 @@ app.put('/api/visitas/:id/chamar', async (req, res) => {
     res.json(rows[0]);
   } catch (err) {
     console.error('Erro ao chamar visitante:', err);
-    res.status(500).json({ error: 'Erro ao chamar visitante' });
+    res.status(500).json({ error: 'Erro ao chamar visitante: ' + err.message });
+  }
+});
+
+/**
+ * PUT /api/visitas/:id/rechamar
+ * Rechamar visitante que estava no histórico
+ */
+app.put('/api/visitas/:id/rechamar', async (req, res) => {
+  const { id } = req.params;
+  
+  try {
+    console.log(`Tentando rechamar visita ID: ${id}`);
+    
+    // Volta status para 'aguardando' e limpa hora_saida
+    const [result] = await pool.query(
+      `UPDATE visitas 
+      SET status = 'aguardando', hora_saida = NULL
+      WHERE id = ? AND status = 'atendido'`,
+      [id]
+    );
+
+    console.log(`Linhas afetadas: ${result.affectedRows}`);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Visita não encontrada ou já está aguardando' });
+    }
+
+    // Busca a visita atualizada
+    const [rows] = await pool.query(
+      'SELECT * FROM visitas_completas WHERE visita_id = ?',
+      [id]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Visita não encontrada após rechamada' });
+    }
+
+    console.log(`Visitante rechamado: ${rows[0].visitante_nome}`);
+
+    res.json(rows[0]);
+  } catch (err) {
+    console.error('Erro ao rechamar visitante:', err);
+    res.status(500).json({ error: 'Erro ao rechamar visitante: ' + err.message });
   }
 });
 
 /**
  * PUT /api/visitas/:id/atender
- * RF008 - Encerramento de Atendimento
+ * RF008 - Encerramento de Atendimento (Opcional - para marcar como finalizado)
  */
 app.put('/api/visitas/:id/atender', async (req, res) => {
   const { id } = req.params;
@@ -353,8 +405,8 @@ app.put('/api/visitas/:id/atender', async (req, res) => {
   try {
     await pool.query(
       `UPDATE visitas 
-      SET status = 'atendido'
-      WHERE id = ?`,
+      SET hora_saida = NOW()
+      WHERE id = ? AND status = 'atendido'`,
       [id]
     );
 
@@ -741,6 +793,10 @@ app.listen(port, "0.0.0.0", async () => {
   console.log('📋 Endpoints disponíveis:');
   console.log('   GET  /api/status');
   console.log('   POST /api/auth/login');
+  console.log('   GET  /api/usuarios');
+  console.log('   POST /api/usuarios');
+  console.log('   PUT  /api/usuarios/:id');
+  console.log('   DELETE /api/usuarios/:id');
   console.log('   POST /api/visitas');
   console.log('   GET  /api/visitas');
   console.log('   GET  /api/visitas/ultima');

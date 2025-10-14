@@ -4,6 +4,7 @@ import PainelRecepcao from './components/PainelRecepcao';
 import PainelDepartamento from './components/PainelDepartamento';
 import PainelTV from './components/PainelTV';
 import PainelAdmin from './components/PainelAdmin';
+import './App.css';
 
 export default function App() {
   const [usuarioLogado, setUsuarioLogado] = useState(null);

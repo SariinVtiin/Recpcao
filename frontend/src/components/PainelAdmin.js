@@ -25,10 +25,16 @@ export default function PainelAdmin({ usuario, onLogout }) {
   const buscarUsuarios = async () => {
     try {
       const response = await fetch('http://192.167.2.41:3001/api/usuarios');
+      if (!response.ok) {
+        throw new Error('Erro ao buscar usuários');
+      }
       const data = await response.json();
-      setUsuarios(data);
+      setUsuarios(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Erro ao buscar usuários:', error);
+      setUsuarios([]); // Define array vazio em caso de erro
+      setMensagem('❌ Erro ao carregar usuários. Verifique se o servidor está rodando.');
+      setTimeout(() => setMensagem(''), 5000);
     }
   };
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Building2, LogOut, Clock } from 'lucide-react';
 
 export default function PainelDepartamento({ usuario, onLogout }) {
@@ -8,21 +8,11 @@ export default function PainelDepartamento({ usuario, onLogout }) {
   const [mostrarHistorico, setMostrarHistorico] = useState(false);
   const [ultimaQuantidade, setUltimaQuantidade] = useState(0);
 
-  useEffect(() => {
-    if (usuario.departamento_id) {
-      buscarVisitas();
-      buscarHistorico();
-      const interval = setInterval(buscarVisitas, 3000);
-      return () => clearInterval(interval);
-    }
-  }, [usuario.departamento_id]);
-
-  const buscarVisitas = async () => {
+  const buscarVisitas = useCallback(async () => {
     try {
       const response = await fetch(`http://192.167.2.41:3001/api/visitas/aguardando/${usuario.departamento_id}`);
       const data = await response.json();
       
-      // Notificação sonora quando novo visitante chega
       if (data.length > ultimaQuantidade && ultimaQuantidade > 0) {
         const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIG2m98OScTgwOUKXh8LJnHgU5k9n0zHgsBS');
         audio.volume = 0.3;
@@ -34,17 +24,38 @@ export default function PainelDepartamento({ usuario, onLogout }) {
     } catch (error) {
       console.error('Erro ao buscar visitas:', error);
     }
-  };
+  }, [usuario.departamento_id, ultimaQuantidade]);
 
-  const buscarHistorico = async () => {
+  const buscarHistorico = useCallback(async () => {
     try {
-      const response = await fetch(`http://192.167.2.41:3001/api/visitas?departamento_id=${usuario.departamento_id}&status=atendido`);
+      const hoje = new Date().toISOString().split('T')[0];
+      const response = await fetch(
+        `http://192.167.2.41:3001/api/visitas?departamento_id=${usuario.departamento_id}&status=atendido`
+      );
       const data = await response.json();
-      setHistorico(data.slice(0, 10));
+      
+      const visitasHoje = data
+        .filter(v => {
+          const dataVisita = new Date(v.hora_chegada).toISOString().split('T')[0];
+          return dataVisita === hoje;
+        })
+        .sort((a, b) => new Date(b.hora_chamada) - new Date(a.hora_chamada))
+        .slice(0, 20);
+      
+      setHistorico(visitasHoje);
     } catch (error) {
       console.error('Erro ao buscar histórico:', error);
     }
-  };
+  }, [usuario.departamento_id]);
+
+  useEffect(() => {
+    if (usuario.departamento_id) {
+      buscarVisitas();
+      buscarHistorico();
+      const interval = setInterval(buscarVisitas, 3000);
+      return () => clearInterval(interval);
+    }
+  }, [usuario.departamento_id, buscarVisitas, buscarHistorico]);
 
   const chamarVisitante = async (visitaId, nomeVisitante) => {
     const confirmar = window.confirm(`Deseja chamar ${nomeVisitante}?`);
@@ -55,10 +66,37 @@ export default function PainelDepartamento({ usuario, onLogout }) {
       await fetch(`http://192.167.2.41:3001/api/visitas/${visitaId}/chamar`, {
         method: 'PUT',
       });
-      buscarVisitas();
+      await buscarVisitas();
+      await buscarHistorico();
     } catch (error) {
       console.error('Erro ao chamar visitante:', error);
       alert('Erro ao chamar visitante. Tente novamente.');
+    } finally {
+      setCarregando(false);
+    }
+  };
+
+  const rechamarVisitante = async (visitaId, nomeVisitante) => {
+    const confirmar = window.confirm(
+      `Visitante ${nomeVisitante} não compareceu?\n\nDeseja rechamar para a fila de espera?`
+    );
+    if (!confirmar) return;
+
+    setCarregando(true);
+    try {
+      const response = await fetch(`http://192.167.2.41:3001/api/visitas/${visitaId}/rechamar`, {
+        method: 'PUT',
+      });
+
+      if (response.ok) {
+        await buscarVisitas();
+        await buscarHistorico();
+      } else {
+        alert('Erro ao rechamar visitante. Tente novamente.');
+      }
+    } catch (error) {
+      console.error('Erro ao rechamar visitante:', error);
+      alert('Erro de conexão. Tente novamente.');
     } finally {
       setCarregando(false);
     }
@@ -102,7 +140,6 @@ export default function PainelDepartamento({ usuario, onLogout }) {
             </button>
           </div>
 
-          {/* Abas */}
           <div className="flex gap-2 mb-6">
             <button
               onClick={() => setMostrarHistorico(false)}
@@ -182,12 +219,12 @@ export default function PainelDepartamento({ usuario, onLogout }) {
           ) : (
             <>
               <h2 className="text-xl font-semibold text-gray-800 mb-4">
-                Últimos Atendimentos
+                Histórico de Hoje ({historico.length})
               </h2>
 
               {historico.length === 0 ? (
                 <div className="text-center py-12 text-gray-500">
-                  <p>Nenhum atendimento registrado</p>
+                  <p>Nenhum atendimento hoje</p>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -195,23 +232,33 @@ export default function PainelDepartamento({ usuario, onLogout }) {
                     <div key={visita.visita_id} className="p-4 bg-gray-50 rounded-lg border-l-4 border-blue-500">
                       <div className="flex justify-between items-start">
                         <div className="flex-1">
-                          <div className="font-semibold text-gray-800">
-                            {visita.visitante_nome}
+                          <div className="flex items-center gap-3 mb-2">
+                            <div className="font-semibold text-gray-800 text-lg">
+                              {visita.visitante_nome}
+                            </div>
+                            <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full font-semibold">
+                              ✓ Chamado
+                            </span>
                           </div>
                           {visita.motivo && (
-                            <div className="text-sm text-gray-600 mt-1">
-                              {visita.motivo}
+                            <div className="text-sm text-gray-600 mb-2">
+                              📋 {visita.motivo}
                             </div>
                           )}
-                          <div className="text-xs text-gray-500 mt-2 space-y-1">
-                            <div>Chegada: {new Date(visita.hora_chegada).toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}</div>
-                            <div>Chamado: {visita.hora_chamada ? new Date(visita.hora_chamada).toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'}) : '-'}</div>
-                            <div>Atendido: {visita.hora_saida ? new Date(visita.hora_saida).toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'}) : '-'}</div>
+                          <div className="text-xs text-gray-500 space-y-1">
+                            <div className="flex gap-4">
+                              <span>🕐 Chegada: {new Date(visita.hora_chegada).toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}</span>
+                              <span>📢 Chamado: {visita.hora_chamada ? new Date(visita.hora_chamada).toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'}) : '-'}</span>
+                            </div>
                           </div>
                         </div>
-                        <span className="px-3 py-1 bg-green-100 text-green-700 text-xs rounded-full font-semibold">
-                          Atendido
-                        </span>
+                        <button
+                          onClick={() => rechamarVisitante(visita.visita_id, visita.visitante_nome)}
+                          disabled={carregando}
+                          className="px-4 py-2 bg-orange-100 text-orange-700 rounded-lg hover:bg-orange-200 transition-colors font-semibold disabled:bg-gray-200 disabled:cursor-not-allowed flex items-center gap-2"
+                        >
+                          🔄 Rechamar
+                        </button>
                       </div>
                     </div>
                   ))}

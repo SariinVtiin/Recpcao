@@ -16,16 +16,30 @@ export default function PainelTV() {
         const response = await fetch('http://192.167.2.41:3001/api/visitas/ultima');
         const data = await response.json();
         
-        if (data && data.visita_id !== chamadaAtual?.visita_id) {
-          setChamadaAtual(data);
-          if ('speechSynthesis' in window) {
-            window.speechSynthesis.cancel();
-            const texto = `${data.visitante_nome}, dirija-se ao ${data.departamento_nome}`;
-            const fala = new SpeechSynthesisUtterance(texto);
-            fala.lang = 'pt-BR';
-            fala.rate = 0.9;
-            window.speechSynthesis.speak(fala);
+        // Só mostra se foi chamado nos últimos 2 minutos
+        if (data && data.hora_chamada) {
+          const horaChamada = new Date(data.hora_chamada);
+          const agora = new Date();
+          const diferencaMinutos = (agora - horaChamada) / 1000 / 60;
+          
+          if (diferencaMinutos <= 2) {
+            if (data.visita_id !== chamadaAtual?.visita_id) {
+              setChamadaAtual(data);
+              if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const texto = `${data.visitante_nome}, dirija-se ao ${data.departamento_nome}`;
+                const fala = new SpeechSynthesisUtterance(texto);
+                fala.lang = 'pt-BR';
+                fala.rate = 0.9;
+                window.speechSynthesis.speak(fala);
+              }
+            }
+          } else {
+            // Limpa se passou mais de 2 minutos
+            setChamadaAtual(null);
           }
+        } else {
+          setChamadaAtual(null);
         }
       } catch (error) {
         console.error('Erro:', error);
