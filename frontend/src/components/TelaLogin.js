@@ -1,5 +1,7 @@
+//Tela Login
 import React, { useState } from 'react';
 import { User, Lock, AlertCircle, LogIn, Building2 } from 'lucide-react';
+import './TelaLogin.css';
 
 export default function TelaLogin({ onLogin }) {
   const [usuario, setUsuario] = useState('');
@@ -44,20 +46,34 @@ export default function TelaLogin({ onLogin }) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-full mb-4 shadow-xl">
-            <Building2 className="text-white" size={40} />
+    <div className="tela-login-container">
+      {/* Fundo com Imagem */}
+      <div className="tela-login-background"></div>
+      
+      {/* Overlay Gradiente */}
+      <div className="tela-login-overlay"></div>
+
+      {/* Elementos Decorativos */}
+      <div className="tela-login-decoration tela-login-decoration-1"></div>
+      <div className="tela-login-decoration tela-login-decoration-2"></div>
+
+      {/* Conteúdo */}
+      <div className="tela-login-content">
+        {/* Header */}
+        <div className="tela-login-header">
+          <div className="tela-login-logo-wrapper">
+            <Building2 className="tela-login-logo-icon" size={40} />
           </div>
-          <h1 className="text-4xl font-bold text-gray-800 mb-2">Sistema de Recepção</h1>
-          <p className="text-gray-600">Faça login para acessar o sistema</p>
+          <h1 className="tela-login-title">Sistema de Recepção</h1>
+          <p className="tela-login-subtitle">Faça login para acessar o sistema</p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-2xl p-8">
-          <div className="mb-6">
-            <label className="flex items-center text-sm font-semibold text-gray-700 mb-2">
-              <User size={18} className="mr-2 text-blue-600" />
+        {/* Card de Login */}
+        <div className="tela-login-card">
+          {/* Campo Usuário */}
+          <div className="tela-login-form-group">
+            <label className="tela-login-label">
+              <User size={18} className="tela-login-label-icon" />
               Usuário
             </label>
             <input
@@ -66,14 +82,15 @@ export default function TelaLogin({ onLogin }) {
               onChange={(e) => setUsuario(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder="Digite seu usuário"
-              className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none transition-colors"
+              className="tela-login-input"
               disabled={carregando}
             />
           </div>
 
-          <div className="mb-6">
-            <label className="flex items-center text-sm font-semibold text-gray-700 mb-2">
-              <Lock size={18} className="mr-2 text-blue-600" />
+          {/* Campo Senha */}
+          <div className="tela-login-form-group">
+            <label className="tela-login-label">
+              <Lock size={18} className="tela-login-label-icon" />
               Senha
             </label>
             <input
@@ -82,50 +99,39 @@ export default function TelaLogin({ onLogin }) {
               onChange={(e) => setSenha(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder="Digite sua senha"
-              className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none transition-colors"
+              className="tela-login-input"
               disabled={carregando}
             />
           </div>
 
+          {/* Mensagem de Erro */}
           {erroLogin && (
-            <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded">
-              <div className="flex items-start">
-                <AlertCircle className="text-red-500 mr-2 flex-shrink-0 mt-0.5" size={20} />
-                <p className="text-red-800 text-sm">{erroLogin}</p>
+            <div className="tela-login-error">
+              <div className="tela-login-error-content">
+                <AlertCircle className="tela-login-error-icon" size={20} />
+                <p className="tela-login-error-text">{erroLogin}</p>
               </div>
             </div>
           )}
 
+          {/* Botão de Login */}
           <button
             onClick={fazerLogin}
             disabled={carregando}
-            className={`w-full py-4 rounded-lg font-bold text-lg text-white transition-all flex items-center justify-center ${
-              carregando
-                ? 'bg-gray-400 cursor-not-allowed'
-                : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg'
-            }`}
+            className="tela-login-btn"
           >
             {carregando ? (
               <>
-                <div className="w-5 h-5 border-3 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                <div className="tela-login-spinner"></div>
                 Entrando...
               </>
             ) : (
               <>
-                <LogIn size={20} className="mr-2" />
+                <LogIn size={20} className="tela-login-btn-icon" />
                 Entrar
               </>
             )}
           </button>
-
-          <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-            <p className="text-sm text-gray-600 mb-2"><strong>Usuários de teste:</strong></p>
-            <div className="text-xs text-gray-500 space-y-1">
-              <p>• admin / 123456 (Recepcionista)</p>
-              <p>• dp1 / 123456 (Depto. Pessoal)</p>
-              <p>• op1 / 123456 (Operacional)</p>
-            </div>
-          </div>
         </div>
       </div>
     </div>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Shield, LogOut, UserPlus, Edit2, Trash2, Eye, EyeOff, Check, X } from 'lucide-react';
+import './PainelAdmin.css';
 
 export default function PainelAdmin({ usuario, onLogout }) {
   const [usuarios, setUsuarios] = useState([]);
@@ -9,7 +10,6 @@ export default function PainelAdmin({ usuario, onLogout }) {
   const [carregando, setCarregando] = useState(false);
   const [mensagem, setMensagem] = useState('');
 
-  // Formulário
   const [nome, setNome] = useState('');
   const [login, setLogin] = useState('');
   const [senha, setSenha] = useState('');
@@ -25,15 +25,13 @@ export default function PainelAdmin({ usuario, onLogout }) {
   const buscarUsuarios = async () => {
     try {
       const response = await fetch('http://192.167.2.41:3001/api/usuarios');
-      if (!response.ok) {
-        throw new Error('Erro ao buscar usuários');
-      }
+      if (!response.ok) throw new Error('Erro ao buscar usuários');
       const data = await response.json();
       setUsuarios(Array.isArray(data) ? data : []);
     } catch (error) {
-      console.error('Erro ao buscar usuários:', error);
-      setUsuarios([]); // Define array vazio em caso de erro
-      setMensagem('❌ Erro ao carregar usuários. Verifique se o servidor está rodando.');
+      console.error('Erro:', error);
+      setUsuarios([]);
+      setMensagem('❌ Erro ao carregar usuários');
       setTimeout(() => setMensagem(''), 5000);
     }
   };
@@ -44,7 +42,7 @@ export default function PainelAdmin({ usuario, onLogout }) {
       const data = await response.json();
       setDepartamentos(data);
     } catch (error) {
-      console.error('Erro ao buscar departamentos:', error);
+      console.error('Erro:', error);
     }
   };
 
@@ -62,7 +60,7 @@ export default function PainelAdmin({ usuario, onLogout }) {
     setEditando(user.id);
     setNome(user.nome);
     setLogin(user.login);
-    setSenha(''); // Não preenche a senha por segurança
+    setSenha('');
     setPerfil(user.perfil);
     setDepartamentoId(user.departamento_id || '');
     setMostrarFormulario(true);
@@ -76,7 +74,6 @@ export default function PainelAdmin({ usuario, onLogout }) {
     }
 
     setCarregando(true);
-
     try {
       const dados = {
         nome: nome.trim(),
@@ -85,22 +82,17 @@ export default function PainelAdmin({ usuario, onLogout }) {
         departamento_id: departamentoId || null
       };
 
-      // Só envia senha se preenchida
-      if (senha.trim()) {
-        dados.senha = senha.trim();
-      }
+      if (senha.trim()) dados.senha = senha.trim();
 
       let response;
       if (editando) {
-        // Atualizar
         response = await fetch(`http://192.167.2.41:3001/api/usuarios/${editando}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(dados),
         });
       } else {
-        // Criar novo
-        dados.senha = senha.trim(); // Senha obrigatória para novo
+        dados.senha = senha.trim();
         response = await fetch('http://192.167.2.41:3001/api/usuarios', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -128,8 +120,7 @@ export default function PainelAdmin({ usuario, onLogout }) {
   };
 
   const deletarUsuario = async (id, nomeUsuario) => {
-    const confirmar = window.confirm(`Deseja realmente desativar o usuário ${nomeUsuario}?`);
-    if (!confirmar) return;
+    if (!window.confirm(`Deseja desativar ${nomeUsuario}?`)) return;
 
     try {
       const response = await fetch(`http://192.167.2.41:3001/api/usuarios/${id}`, {
@@ -137,7 +128,7 @@ export default function PainelAdmin({ usuario, onLogout }) {
       });
 
       if (response.ok) {
-        setMensagem('✅ Usuário desativado com sucesso!');
+        setMensagem('✅ Usuário desativado!');
         buscarUsuarios();
         setTimeout(() => setMensagem(''), 3000);
       } else {
@@ -147,51 +138,48 @@ export default function PainelAdmin({ usuario, onLogout }) {
       }
     } catch (error) {
       console.error('Erro:', error);
-      setMensagem('❌ Erro ao desativar usuário');
+      setMensagem('❌ Erro ao desativar');
       setTimeout(() => setMensagem(''), 3000);
     }
   };
 
   const getPerfilInfo = (perfil) => {
     const perfis = {
-      administrador: { label: 'Administrador', cor: 'bg-purple-100 text-purple-800', icone: '👑' },
-      recepcionista: { label: 'Recepcionista', cor: 'bg-blue-100 text-blue-800', icone: '👤' },
-      departamento: { label: 'Departamento', cor: 'bg-green-100 text-green-800', icone: '🏢' },
-      painel: { label: 'Painel TV', cor: 'bg-gray-100 text-gray-800', icone: '📺' }
+      administrador: { label: 'Administrador', classe: 'admin', icone: '👑' },
+      recepcionista: { label: 'Recepcionista', classe: 'receptionist', icone: '👤' },
+      departamento: { label: 'Departamento', classe: 'department', icone: '🏢' },
+      painel: { label: 'Painel TV', classe: 'panel', icone: '📺' }
     };
     return perfis[perfil] || perfis.recepcionista;
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-100 p-8">
-      <div className="max-w-6xl mx-auto">
-        <div className="bg-white rounded-2xl shadow-2xl p-8">
+    <div className="painel-admin-container">
+      <div className="painel-admin-background"></div>
+      <div className="painel-admin-overlay"></div>
+
+      <div className="painel-admin-content">
+        <div className="painel-admin-card">
           {/* Header */}
-          <div className="flex justify-between items-center mb-8 pb-6 border-b-2 border-gray-100">
-            <div className="flex items-center">
-              <div className="inline-flex items-center justify-center w-12 h-12 bg-purple-600 rounded-full mr-3">
+          <div className="painel-admin-header">
+            <div className="painel-admin-header-left">
+              <div className="painel-admin-icon">
                 <Shield className="text-white" size={24} />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-800">Painel Administrativo</h1>
-                <p className="text-sm text-gray-600">{usuario.nome} • Gerenciar Usuários</p>
+                <h1 className="painel-admin-title">Painel Administrativo</h1>
+                <p className="painel-admin-subtitle">{usuario.nome} • Gerenciar Usuários</p>
               </div>
             </div>
-            <button
-              onClick={onLogout}
-              className="flex items-center px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100"
-            >
+            <button onClick={onLogout} className="painel-admin-btn-logout">
               <LogOut size={18} className="mr-2" />
               Sair
             </button>
           </div>
 
-          {/* Botão Novo Usuário */}
+          {/* Botão Novo */}
           {!mostrarFormulario && (
-            <button
-              onClick={() => setMostrarFormulario(true)}
-              className="mb-6 flex items-center px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-semibold shadow-lg"
-            >
+            <button onClick={() => setMostrarFormulario(true)} className="painel-admin-btn-new">
               <UserPlus size={20} className="mr-2" />
               Novo Usuário
             </button>
@@ -199,76 +187,67 @@ export default function PainelAdmin({ usuario, onLogout }) {
 
           {/* Formulário */}
           {mostrarFormulario && (
-            <div className="mb-8 p-6 bg-purple-50 rounded-xl border-2 border-purple-200">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold text-gray-800">
+            <div className="painel-admin-form">
+              <div className="painel-admin-form-header">
+                <h2 className="painel-admin-form-title">
                   {editando ? 'Editar Usuário' : 'Novo Usuário'}
                 </h2>
-                <button
-                  onClick={limparFormulario}
-                  className="text-gray-500 hover:text-gray-700"
-                >
+                <button onClick={limparFormulario} className="painel-admin-btn-close">
                   <X size={24} />
                 </button>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Nome Completo *
-                  </label>
+              <div className="painel-admin-form-grid">
+                <div className="painel-admin-form-group">
+                  <label className="painel-admin-form-label">Nome Completo *</label>
                   <input
                     type="text"
                     value={nome}
                     onChange={(e) => setNome(e.target.value)}
                     placeholder="Digite o nome completo"
-                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none"
+                    className="painel-admin-form-input"
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Login *
-                  </label>
+                <div className="painel-admin-form-group">
+                  <label className="painel-admin-form-label">Login *</label>
                   <input
                     type="text"
                     value={login}
                     onChange={(e) => setLogin(e.target.value)}
                     placeholder="usuário"
-                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none"
+                    className="painel-admin-form-input"
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <div className="painel-admin-form-group">
+                  <label className="painel-admin-form-label">
                     Senha {editando ? '(deixe vazio para manter)' : '*'}
                   </label>
-                  <div className="relative">
+                  <div className="painel-admin-password-wrapper">
                     <input
                       type={mostrarSenha ? 'text' : 'password'}
                       value={senha}
                       onChange={(e) => setSenha(e.target.value)}
                       placeholder={editando ? 'Nova senha (opcional)' : 'Digite a senha'}
-                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none"
+                      className="painel-admin-form-input"
                     />
                     <button
                       type="button"
                       onClick={() => setMostrarSenha(!mostrarSenha)}
-                      className="absolute right-3 top-3 text-gray-500 hover:text-gray-700"
+                      className="painel-admin-btn-toggle-password"
                     >
                       {mostrarSenha ? <EyeOff size={20} /> : <Eye size={20} />}
                     </button>
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Perfil de Acesso *
-                  </label>
+                <div className="painel-admin-form-group">
+                  <label className="painel-admin-form-label">Perfil de Acesso *</label>
                   <select
                     value={perfil}
                     onChange={(e) => setPerfil(e.target.value)}
-                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none"
+                    className="painel-admin-form-select"
                   >
                     <option value="administrador">👑 Administrador</option>
                     <option value="recepcionista">👤 Recepcionista</option>
@@ -278,39 +257,32 @@ export default function PainelAdmin({ usuario, onLogout }) {
                 </div>
 
                 {perfil === 'departamento' && (
-                  <div className="col-span-2">
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Departamento
-                    </label>
+                  <div className="painel-admin-form-group full-width">
+                    <label className="painel-admin-form-label">Departamento</label>
                     <select
                       value={departamentoId}
                       onChange={(e) => setDepartamentoId(e.target.value)}
-                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none"
+                      className="painel-admin-form-select"
                     >
                       <option value="">Selecione um departamento</option>
                       {departamentos.map((dept) => (
-                        <option key={dept.id} value={dept.id}>
-                          {dept.nome}
-                        </option>
+                        <option key={dept.id} value={dept.id}>{dept.nome}</option>
                       ))}
                     </select>
                   </div>
                 )}
               </div>
 
-              <div className="flex gap-3 mt-6">
+              <div className="painel-admin-form-actions">
                 <button
                   onClick={salvarUsuario}
                   disabled={carregando}
-                  className="flex-1 flex items-center justify-center px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-semibold disabled:bg-gray-400"
+                  className="painel-admin-btn-save"
                 >
                   <Check size={20} className="mr-2" />
                   {carregando ? 'Salvando...' : editando ? 'Atualizar' : 'Criar Usuário'}
                 </button>
-                <button
-                  onClick={limparFormulario}
-                  className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-semibold"
-                >
+                <button onClick={limparFormulario} className="painel-admin-btn-cancel">
                   Cancelar
                 </button>
               </div>
@@ -319,61 +291,50 @@ export default function PainelAdmin({ usuario, onLogout }) {
 
           {/* Mensagem */}
           {mensagem && (
-            <div className={`mb-6 p-4 rounded-lg text-center font-semibold ${
-              mensagem.includes('✅') 
-                ? 'bg-green-100 text-green-800' 
-                : 'bg-red-100 text-red-800'
-            }`}>
+            <div className={`painel-admin-message ${mensagem.includes('✅') ? 'success' : 'error'}`}>
               {mensagem}
             </div>
           )}
 
-          {/* Lista de Usuários */}
-          <h2 className="text-xl font-semibold text-gray-800 mb-4">
+          {/* Lista */}
+          <h2 className="painel-admin-list-title">
             Usuários Cadastrados ({usuarios.filter(u => u.ativo).length})
           </h2>
 
-          <div className="space-y-3">
+          <div className="painel-admin-user-list">
             {usuarios.filter(u => u.ativo).map((user) => {
               const perfilInfo = getPerfilInfo(user.perfil);
               return (
-                <div key={user.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors border-l-4 border-purple-500">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="text-2xl">{perfilInfo.icone}</div>
+                <div key={user.id} className="painel-admin-user-card">
+                  <div className="painel-admin-user-info">
+                    <div className="painel-admin-user-header">
+                      <div className="painel-admin-user-icon">{perfilInfo.icone}</div>
                       <div>
-                        <div className="font-semibold text-gray-800 text-lg">
-                          {user.nome}
-                        </div>
-                        <div className="text-sm text-gray-600">
+                        <div className="painel-admin-user-name">{user.nome}</div>
+                        <div className="painel-admin-user-details">
                           @{user.login}
-                          {user.departamento_nome && (
-                            <span className="ml-2">• {user.departamento_nome}</span>
-                          )}
+                          {user.departamento_nome && ` • ${user.departamento_nome}`}
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${perfilInfo.cor}`}>
+                    <div className="painel-admin-user-badges">
+                      <span className={`painel-admin-badge ${perfilInfo.classe}`}>
                         {perfilInfo.label}
                       </span>
-                      <span className="text-xs text-gray-500">
+                      <span className="painel-admin-user-date">
                         Criado em {new Date(user.created_at).toLocaleDateString('pt-BR')}
                       </span>
                     </div>
                   </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => abrirEdicao(user)}
-                      className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors font-semibold flex items-center"
-                    >
+                  <div className="painel-admin-user-actions">
+                    <button onClick={() => abrirEdicao(user)} className="painel-admin-btn-edit">
                       <Edit2 size={16} className="mr-1" />
                       Editar
                     </button>
                     {user.login !== 'admin' && (
                       <button
                         onClick={() => deletarUsuario(user.id, user.nome)}
-                        className="px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors font-semibold flex items-center"
+                        className="painel-admin-btn-delete"
                       >
                         <Trash2 size={16} className="mr-1" />
                         Desativar
@@ -386,7 +347,7 @@ export default function PainelAdmin({ usuario, onLogout }) {
           </div>
 
           {usuarios.filter(u => u.ativo).length === 0 && (
-            <div className="text-center py-12 text-gray-500">
+            <div className="painel-admin-empty">
               <p>Nenhum usuário cadastrado</p>
             </div>
           )}

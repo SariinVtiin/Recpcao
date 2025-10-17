@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Clock, Volume2 } from 'lucide-react';
+import './PainelTV.css';
 
 export default function PainelTV() {
   const [chamadaAtual, setChamadaAtual] = useState(null);
@@ -16,7 +17,6 @@ export default function PainelTV() {
         const response = await fetch('http://192.167.2.41:3001/api/visitas/ultima');
         const data = await response.json();
         
-        // Só mostra se foi chamado nos últimos 2 minutos
         if (data && data.hora_chamada) {
           const horaChamada = new Date(data.hora_chamada);
           const agora = new Date();
@@ -35,7 +35,6 @@ export default function PainelTV() {
               }
             }
           } else {
-            // Limpa se passou mais de 2 minutos
             setChamadaAtual(null);
           }
         } else {
@@ -51,74 +50,85 @@ export default function PainelTV() {
     return () => clearInterval(interval);
   }, [chamadaAtual]);
 
+  // Determinar qual departamento
+  const isDeptOperacional = chamadaAtual?.departamento_nome === 'Departamento Operacional';
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex flex-col">
-      <div className="bg-blue-800 bg-opacity-50 backdrop-blur-sm p-6 shadow-2xl">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold text-white">Sistema de Chamadas</h1>
-            <p className="text-blue-200 mt-1">Aguarde sua chamada</p>
-          </div>
-          <div className="text-right">
-            <div className="flex items-center text-white text-2xl font-mono mb-1">
-              <Clock size={24} className="mr-2" />
-              {hora.toLocaleTimeString('pt-BR')}
+    <div className="painel-tv-container">
+      {/* Fundo com Imagem */}
+      <div className="painel-tv-background"></div>
+      
+      {/* Overlay Azul/Cinza */}
+      <div className="painel-tv-overlay"></div>
+
+      {/* Conteúdo */}
+      <div className="painel-tv-content">
+        {/* Header com Relógio */}
+        <div className="painel-tv-header">
+          <div className="painel-tv-header-content">
+            <div>
+              <h1 className="painel-tv-title">Aguarde sua chamada</h1>
             </div>
-            <div className="text-blue-200 text-sm capitalize">
-              {hora.toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="flex-1 flex items-center justify-center p-8">
-        {chamadaAtual ? (
-          <div className="w-full max-w-5xl">
-            <div className="bg-white rounded-3xl shadow-2xl overflow-hidden">
-              <div className={`h-3 ${chamadaAtual.departamento_nome === 'Departamento Operacional' ? 'bg-blue-600' : 'bg-green-600'}`}></div>
-              
-              <div className="p-12">
-                <div className="flex items-start mb-8">
-                  <Volume2 size={48} className="text-blue-600 mr-4 mt-2 animate-pulse" />
-                  <div className="flex-1">
-                    <div className="text-gray-600 text-2xl mb-2">Chamando agora:</div>
-                    <div className="text-6xl font-bold text-gray-900 mb-4 break-words">
-                      {chamadaAtual.visitante_nome}
-                    </div>
-                  </div>
-                </div>
-
-                <div className={`text-3xl font-semibold p-6 rounded-2xl ${
-                  chamadaAtual.departamento_nome === 'Departamento Operacional'
-                    ? 'bg-blue-100 text-blue-900'
-                    : 'bg-green-100 text-green-900'
-                }`}>
-                  <div className="mb-2 text-xl opacity-75">Dirija-se ao:</div>
-                  <div className="flex items-center">
-                    <span className="text-5xl mr-3">→</span>
-                    {chamadaAtual.departamento_nome}
-                  </div>
-                </div>
-
-                {chamadaAtual.observacao && (
-                  <div className="mt-6 p-4 bg-yellow-50 border-l-4 border-yellow-400 rounded">
-                    <div className="text-yellow-800 text-xl">
-                      <strong>Observação:</strong> {chamadaAtual.observacao}
-                    </div>
-                  </div>
-                )}
+            <div className="painel-tv-clock-wrapper">
+              <div className="painel-tv-clock">
+                <Clock size={24} className="painel-tv-clock-icon" />
+                {hora.toLocaleTimeString('pt-BR')}
+              </div>
+              <div className="painel-tv-date">
+                {hora.toLocaleDateString('pt-BR', { 
+                  weekday: 'long', 
+                  year: 'numeric', 
+                  month: 'long', 
+                  day: 'numeric' 
+                })}
               </div>
             </div>
           </div>
-        ) : (
-          <div className="text-center">
-            <div className="inline-block animate-pulse">
-              <Volume2 size={80} className="text-blue-400 mb-4" />
+        </div>
+
+        {/* Conteúdo Principal */}
+        <div className="painel-tv-main">
+          {chamadaAtual ? (
+            <div className="painel-tv-chamada-wrapper">
+              <div className="painel-tv-chamada-card">
+                {/* Indicador de Departamento */}
+                <div className={`painel-tv-dept-indicator ${isDeptOperacional ? 'operacional' : 'pessoal'}`}></div>
+                
+                <div className="painel-tv-chamada-content">
+                  {/* Header da Chamada */}
+                  <div className="painel-tv-chamada-header">
+                    <Volume2 size={48} className="painel-tv-volume-icon" />
+                    <div className="painel-tv-chamada-info">
+                      <div className="painel-tv-chamada-label">Chamando agora:</div>
+                      <div className="painel-tv-visitante-nome">
+                        {chamadaAtual.visitante_nome}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Box do Departamento */}
+                  <div className={`painel-tv-dept-box ${isDeptOperacional ? 'operacional' : 'pessoal'}`}>
+                    <div className="painel-tv-dept-label">Dirija-se ao:</div>
+                    <div className="painel-tv-dept-name-wrapper">
+                      <span className="painel-tv-dept-arrow">→</span>
+                      <span className="painel-tv-dept-name">
+                        {chamadaAtual.departamento_nome}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-            <h2 className="text-4xl font-bold text-white mb-4">Aguardando Chamadas</h2>
-            <p className="text-blue-300 text-xl">Fique atento ao painel</p>
-          </div>
-        )}
+          ) : (
+            <div className="painel-tv-waiting">
+              <div className="painel-tv-waiting-icon-wrapper">
+                <Volume2 size={80} className="painel-tv-waiting-icon" />
+              </div>
+              <h2 className="painel-tv-waiting-title">Aguardando Chamadas</h2>
+              <p className="painel-tv-waiting-subtitle">Fique atento ao painel</p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

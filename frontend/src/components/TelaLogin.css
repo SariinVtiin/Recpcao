@@ -1,0 +1,519 @@
+/* ============================================
+   TELA DE LOGIN - ESTILOS
+   Sistema de Recepção Empresarial
+   ============================================ */
+
+/* Container Principal */
+.tela-login-container {
+  min-height: 100vh;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+/* Fundo com Imagem */
+.tela-login-background {
+  position: absolute;
+  inset: 0;
+  background-image: url('C:\Users\jonathan01062\Documents\CODE\RECEPÇÃO\Recepcao\frontend\public\confederal.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  filter: brightness(0.35);
+  z-index: 0;
+}
+
+/* Overlay Gradiente */
+.tela-login-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+/* Efeito de partículas animadas (opcional) */
+.tela-login-particles {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  opacity: 0.1;
+}
+
+/* Wrapper do Conteúdo */
+.tela-login-content {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  max-width: 448px;
+  animation: fadeInUp 0.6s ease-out;
+}
+
+/* ============================================
+   HEADER/LOGO
+   ============================================ */
+
+.tela-login-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.tela-login-logo-wrapper {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 5rem;
+  height: 5rem;
+  background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
+  border-radius: 9999px;
+  margin-bottom: 1rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25),
+              0 0 0 8px rgba(255, 255, 255, 0.1);
+  animation: float 3s ease-in-out infinite;
+}
+
+.tela-login-logo-icon {
+  color: white;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+.tela-login-title {
+  font-size: 2.25rem;
+  font-weight: 700;
+  color: white;
+  margin-bottom: 0.5rem;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.tela-login-subtitle {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 1rem;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* ============================================
+   CARD DE LOGIN
+   ============================================ */
+
+.tela-login-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(16px);
+  border-radius: 1rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25),
+              0 0 0 1px rgba(255, 255, 255, 0.1);
+  padding: 2rem;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  animation: slideUp 0.6s ease-out 0.2s backwards;
+}
+
+/* ============================================
+   CAMPOS DE FORMULÁRIO
+   ============================================ */
+
+.tela-login-form-group {
+  margin-bottom: 1.5rem;
+}
+
+.tela-login-label {
+  display: flex;
+  align-items: center;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 0.5rem;
+}
+
+.tela-login-label-icon {
+  margin-right: 0.5rem;
+  color: #2563eb;
+}
+
+.tela-login-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 2px solid #d1d5db;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+  background: white;
+}
+
+.tela-login-input:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+}
+
+.tela-login-input:disabled {
+  background: #f3f4f6;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.tela-login-input::placeholder {
+  color: #9ca3af;
+}
+
+/* ============================================
+   MENSAGEM DE ERRO
+   ============================================ */
+
+.tela-login-error {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: #fef2f2;
+  border-left: 4px solid #ef4444;
+  border-radius: 0.5rem;
+  animation: shake 0.3s ease-in-out;
+}
+
+.tela-login-error-content {
+  display: flex;
+  align-items: flex-start;
+}
+
+.tela-login-error-icon {
+  color: #ef4444;
+  margin-right: 0.5rem;
+  flex-shrink: 0;
+  margin-top: 0.125rem;
+}
+
+.tela-login-error-text {
+  color: #991b1b;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+/* ============================================
+   BOTÃO DE LOGIN
+   ============================================ */
+
+.tela-login-btn {
+  width: 100%;
+  padding: 1rem;
+  border: none;
+  border-radius: 0.5rem;
+  font-weight: 700;
+  font-size: 1.125rem;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+.tela-login-btn:not(:disabled) {
+  background: linear-gradient(to right, #2563eb, #4f46e5);
+}
+
+.tela-login-btn:not(:disabled):hover {
+  background: linear-gradient(to right, #1d4ed8, #4338ca);
+  transform: translateY(-2px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
+              0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.tela-login-btn:not(:disabled):active {
+  transform: translateY(0);
+}
+
+.tela-login-btn:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.tela-login-btn-icon {
+  margin-right: 0.5rem;
+}
+
+/* Spinner de loading */
+.tela-login-spinner {
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 3px solid white;
+  border-top-color: transparent;
+  border-radius: 9999px;
+  margin-right: 0.5rem;
+  animation: spin 0.6s linear infinite;
+}
+
+/* ============================================
+   ANIMAÇÕES
+   ============================================ */
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-8px);
+  }
+  75% {
+    transform: translateX(8px);
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25),
+                0 0 0 8px rgba(255, 255, 255, 0.1);
+  }
+  50% {
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25),
+                0 0 0 8px rgba(255, 255, 255, 0.2),
+                0 0 30px rgba(37, 99, 235, 0.3);
+  }
+}
+
+.tela-login-logo-wrapper {
+  animation: float 3s ease-in-out infinite,
+             pulse-glow 2s ease-in-out infinite;
+}
+
+/* ============================================
+   ELEMENTOS DECORATIVOS
+   ============================================ */
+
+/* Círculos decorativos no fundo */
+.tela-login-decoration {
+  position: absolute;
+  border-radius: 9999px;
+  opacity: 0.1;
+  pointer-events: none;
+}
+
+.tela-login-decoration-1 {
+  top: 10%;
+  left: 5%;
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(37, 99, 235, 0.4) 0%, transparent 70%);
+  animation: float 8s ease-in-out infinite;
+}
+
+.tela-login-decoration-2 {
+  bottom: 15%;
+  right: 10%;
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(147, 51, 234, 0.4) 0%, transparent 70%);
+  animation: float 10s ease-in-out infinite reverse;
+}
+
+/* ============================================
+   RESPONSIVIDADE
+   ============================================ */
+
+@media (max-width: 640px) {
+  .tela-login-container {
+    padding: 1rem;
+  }
+
+  .tela-login-card {
+    padding: 1.5rem;
+  }
+
+  .tela-login-title {
+    font-size: 1.875rem;
+  }
+
+  .tela-login-subtitle {
+    font-size: 0.875rem;
+  }
+
+  .tela-login-logo-wrapper {
+    width: 4rem;
+    height: 4rem;
+  }
+
+  .tela-login-btn {
+    padding: 0.875rem;
+    font-size: 1rem;
+  }
+
+  .tela-login-decoration-1,
+  .tela-login-decoration-2 {
+    display: none;
+  }
+}
+
+@media (max-width: 380px) {
+  .tela-login-title {
+    font-size: 1.5rem;
+  }
+
+  .tela-login-logo-wrapper {
+    width: 3.5rem;
+    height: 3.5rem;
+  }
+}
+
+/* ============================================
+   ACESSIBILIDADE
+   ============================================ */
+
+.tela-login-input:focus-visible,
+.tela-login-btn:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tela-login-content,
+  .tela-login-card,
+  .tela-login-logo-wrapper,
+  .tela-login-decoration-1,
+  .tela-login-decoration-2 {
+    animation: none;
+  }
+}
+
+/* ============================================
+   DARK MODE (Opcional)
+   ============================================ */
+
+@media (prefers-color-scheme: dark) {
+  .tela-login-card {
+    background: rgba(17, 24, 39, 0.95);
+  }
+
+  .tela-login-label {
+    color: #d1d5db;
+  }
+
+  .tela-login-input {
+    background: #1f2937;
+    border-color: #374151;
+    color: white;
+  }
+
+  .tela-login-input::placeholder {
+    color: #6b7280;
+  }
+
+  .tela-login-input:focus {
+    border-color: #3b82f6;
+    background: #111827;
+  }
+}
+
+/* ============================================
+   ESTADOS ESPECIAIS
+   ============================================ */
+
+/* Animação de sucesso após login */
+.tela-login-card.success {
+  animation: successPulse 0.5s ease-out;
+}
+
+@keyframes successPulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+/* Estado de carregamento global */
+.tela-login-container.loading {
+  pointer-events: none;
+}
+
+.tela-login-container.loading .tela-login-card {
+  opacity: 0.8;
+}
+
+/* ============================================
+   INFORMAÇÕES ADICIONAIS
+   ============================================ */
+
+.tela-login-footer {
+  margin-top: 1.5rem;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.875rem;
+}
+
+.tela-login-footer-link {
+  color: rgba(255, 255, 255, 0.9);
+  text-decoration: underline;
+  transition: color 0.2s;
+}
+
+.tela-login-footer-link:hover {
+  color: white;
+}
+
+/* ============================================
+   VERSÃO/BUILD INFO
+   ============================================ */
+
+.tela-login-version {
+  position: absolute;
+  bottom: 1rem;
+  right: 1rem;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.75rem;
+  z-index: 10;
+}
+
+/* ============================================
+   IMPRESSÃO (DESABILITADA)
+   ============================================ */
+
+@media print {
+  .tela-login-container {
+    display: none !important;
+  }
+}
+
+/* ============================================
+   FIM DOS ESTILOS
+   ============================================ */

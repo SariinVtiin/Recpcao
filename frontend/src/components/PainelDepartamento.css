@@ -1,0 +1,590 @@
+/* ============================================
+   PAINEL DEPARTAMENTO - ESTILOS
+   Sistema de Recepção Empresarial
+   ============================================ */
+
+/* Container Principal */
+.painel-dept-container {
+  min-height: 100vh;
+  position: relative;
+  overflow: hidden;
+  padding: 2rem;
+}
+
+/* Fundo com Imagem */
+.painel-dept-background {
+  position: absolute;
+  inset: 0;
+  background-image: url("C:\Users\jonathan01062\Documents\CODE\RECEPÇÃO\Recepcao\frontend\public\confederal.png");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  filter: brightness(0.3);
+  z-index: 0;
+}
+
+/* Overlay Verde/Esmeralda */
+.painel-dept-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+/* Wrapper do Conteúdo */
+.painel-dept-content {
+  position: relative;
+  z-index: 10;
+  max-width: 1152px;
+  margin: 0 auto;
+}
+
+/* Card Principal */
+.painel-dept-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 1rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  padding: 2rem;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+/* ============================================
+   HEADER
+   ============================================ */
+
+.painel-dept-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 2px solid #f1f5f9;
+}
+
+.painel-dept-header-left {
+  display: flex;
+  align-items: center;
+}
+
+.painel-dept-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  background: #059669;
+  border-radius: 9999px;
+  margin-right: 0.75rem;
+}
+
+.painel-dept-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0;
+}
+
+.painel-dept-subtitle {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+.painel-dept-btn-logout {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  background: #fef2f2;
+  color: #dc2626;
+  border: none;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.painel-dept-btn-logout:hover {
+  background: #fee2e2;
+}
+
+/* ============================================
+   ABAS DE NAVEGAÇÃO
+   ============================================ */
+
+.painel-dept-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.painel-dept-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border: none;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.painel-dept-tab.aguardando {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.painel-dept-tab.aguardando:hover {
+  background: #e5e7eb;
+}
+
+.painel-dept-tab.aguardando.active {
+  background: #ea580c;
+  color: white;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+.painel-dept-tab.chamados {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.painel-dept-tab.chamados:hover {
+  background: #e5e7eb;
+}
+
+.painel-dept-tab.chamados.active {
+  background: #2563eb;
+  color: white;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+.painel-dept-tab.finalizados {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.painel-dept-tab.finalizados:hover {
+  background: #e5e7eb;
+}
+
+.painel-dept-tab.finalizados.active {
+  background: #059669;
+  color: white;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+/* ============================================
+   CONTEÚDO DAS ABAS
+   ============================================ */
+
+.painel-dept-tab-content {
+  min-height: 400px;
+}
+
+.painel-dept-section-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Estado Vazio */
+.painel-dept-empty {
+  text-align: center;
+  padding: 4rem 0;
+  color: #6b7280;
+}
+
+.painel-dept-empty-icon {
+  margin: 0 auto 1rem;
+  opacity: 0.3;
+}
+
+.painel-dept-empty-text {
+  font-size: 1.125rem;
+}
+
+/* ============================================
+   CARDS DE VISITAS
+   ============================================ */
+
+.painel-dept-visitas-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* Card Aguardando */
+.painel-dept-visita-card.aguardando {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem;
+  background: #fff7ed;
+  border-radius: 0.75rem;
+  border-left: 4px solid #ea580c;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  transition: all 0.2s;
+}
+
+.painel-dept-visita-card.aguardando:hover {
+  background: #ffedd5;
+}
+
+/* Card Chamado */
+.painel-dept-visita-card.chamado {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem;
+  background: #eff6ff;
+  border-radius: 0.75rem;
+  border-left: 4px solid #2563eb;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  transition: all 0.2s;
+}
+
+.painel-dept-visita-card.chamado:hover {
+  background: #dbeafe;
+}
+
+/* Card Finalizado */
+.painel-dept-visita-card.finalizado {
+  padding: 1.25rem;
+  background: #f0fdf4;
+  border-radius: 0.75rem;
+  border-left: 4px solid #059669;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  transition: all 0.2s;
+}
+
+.painel-dept-visita-card.finalizado:hover {
+  background: #dcfce7;
+}
+
+/* Info do Visitante */
+.painel-dept-visita-info {
+  flex: 1;
+}
+
+.painel-dept-visita-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.painel-dept-visita-nome {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.painel-dept-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.painel-dept-badge.aguardando {
+  background: #fed7aa;
+  color: #9a3412;
+}
+
+.painel-dept-badge.chamado {
+  background: #bfdbfe;
+  color: #1e40af;
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.painel-dept-badge.finalizado {
+  background: #bbf7d0;
+  color: #166534;
+}
+
+.painel-dept-visita-motivo {
+  font-size: 0.875rem;
+  color: #374151;
+  margin-top: 0.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.painel-dept-visita-obs {
+  font-size: 0.875rem;
+  color: #1d4ed8;
+  margin-top: 0.25rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.painel-dept-visita-horarios {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-top: 0.5rem;
+  display: flex;
+  gap: 1rem;
+}
+
+/* Detalhes Finalizados */
+.painel-dept-detalhes {
+  font-size: 0.75rem;
+  color: #6b7280;
+  background: white;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.painel-dept-detalhe-linha {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.25rem;
+}
+
+.painel-dept-detalhe-linha.total {
+  border-top: 1px solid #e5e7eb;
+  padding-top: 0.25rem;
+  margin-top: 0.25rem;
+}
+
+.painel-dept-detalhe-label {
+  font-weight: 600;
+}
+
+.painel-dept-tempo-total {
+  font-weight: 700;
+  color: #059669;
+}
+
+/* ============================================
+   BOTÕES DE AÇÃO
+   ============================================ */
+
+.painel-dept-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.painel-dept-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem 2rem;
+  border: none;
+  border-radius: 0.75rem;
+  font-weight: 700;
+  font-size: 1.125rem;
+  cursor: pointer;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s;
+}
+
+.painel-dept-btn:hover:not(:disabled) {
+  transform: scale(1.05);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+.painel-dept-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.painel-dept-btn.chamar {
+  background: linear-gradient(to right, #059669, #047857);
+  color: white;
+}
+
+.painel-dept-btn.chamar:hover:not(:disabled) {
+  background: linear-gradient(to right, #047857, #065f46);
+}
+
+.painel-dept-btn.rechamar {
+  background: linear-gradient(to right, #f97316, #ea580c);
+  color: white;
+  padding: 1rem 1.5rem;
+}
+
+.painel-dept-btn.rechamar:hover:not(:disabled) {
+  background: linear-gradient(to right, #ea580c, #c2410c);
+}
+
+.painel-dept-btn.finalizar {
+  background: linear-gradient(to right, #059669, #047857);
+  color: white;
+}
+
+.painel-dept-btn.finalizar:hover:not(:disabled) {
+  background: linear-gradient(to right, #047857, #065f46);
+}
+
+.painel-dept-btn:disabled {
+  background: linear-gradient(to right, #9ca3af, #6b7280);
+}
+
+/* ============================================
+   FOOTER COM RESUMO
+   ============================================ */
+
+.painel-dept-footer {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 2px solid #f1f5f9;
+}
+
+.painel-dept-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+.painel-dept-stat-card {
+  padding: 1rem;
+  border-radius: 0.5rem;
+  text-align: center;
+  border: 2px solid;
+}
+
+.painel-dept-stat-card.aguardando {
+  background: #fff7ed;
+  border-color: #fed7aa;
+}
+
+.painel-dept-stat-card.chamados {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}
+
+.painel-dept-stat-card.finalizados {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.painel-dept-stat-number {
+  font-size: 1.875rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.painel-dept-stat-number.aguardando {
+  color: #c2410c;
+}
+
+.painel-dept-stat-number.chamados {
+  color: #1e40af;
+}
+
+.painel-dept-stat-number.finalizados {
+  color: #047857;
+}
+
+.painel-dept-stat-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-top: 0.25rem;
+}
+
+.painel-dept-stat-label.aguardando {
+  color: #ea580c;
+}
+
+.painel-dept-stat-label.chamados {
+  color: #2563eb;
+}
+
+.painel-dept-stat-label.finalizados {
+  color: #059669;
+}
+
+/* ============================================
+   ANIMAÇÕES
+   ============================================ */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.painel-dept-card,
+.painel-dept-visita-card {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* ============================================
+   RESPONSIVIDADE
+   ============================================ */
+
+@media (max-width: 768px) {
+  .painel-dept-container {
+    padding: 1rem;
+  }
+
+  .painel-dept-card {
+    padding: 1.5rem;
+  }
+
+  .painel-dept-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .painel-dept-tabs {
+    flex-direction: column;
+  }
+
+  .painel-dept-visita-card.aguardando,
+  .painel-dept-visita-card.chamado {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .painel-dept-actions {
+    width: 100%;
+  }
+
+  .painel-dept-btn {
+    flex: 1;
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+  }
+
+  .painel-dept-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .painel-dept-visita-horarios {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+}
+
+/* ============================================
+   FIM DOS ESTILOS
+   ============================================ */

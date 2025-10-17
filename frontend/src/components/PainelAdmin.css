@@ -1,0 +1,512 @@
+/* ============================================
+   PAINEL ADMINISTRATIVO - ESTILOS
+   Sistema de Recepção Empresarial
+   ============================================ */
+
+/* Container Principal */
+.painel-admin-container {
+  min-height: 100vh;
+  position: relative;
+  overflow: hidden;
+  padding: 2rem;
+}
+
+/* Fundo com Imagem */
+.painel-admin-background {
+  position: absolute;
+  inset: 0;
+  background-image: url("C:\Users\jonathan01062\Documents\CODE\RECEPÇÃO\Recepcao\frontend\public\confederal.png");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  filter: brightness(0.3);
+  z-index: 0;
+}
+
+/* Overlay Roxo/Indigo */
+.painel-admin-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+/* Wrapper do Conteúdo */
+.painel-admin-content {
+  position: relative;
+  z-index: 10;
+  max-width: 1152px;
+  margin: 0 auto;
+}
+
+/* Card Principal */
+.painel-admin-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 1rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  padding: 2rem;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+/* ============================================
+   HEADER
+   ============================================ */
+
+.painel-admin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 2px solid #f1f5f9;
+}
+
+.painel-admin-header-left {
+  display: flex;
+  align-items: center;
+}
+
+.painel-admin-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  background: #9333ea;
+  border-radius: 9999px;
+  margin-right: 0.75rem;
+}
+
+.painel-admin-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0;
+}
+
+.painel-admin-subtitle {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+.painel-admin-btn-logout {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  background: #fef2f2;
+  color: #dc2626;
+  border: none;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.painel-admin-btn-logout:hover {
+  background: #fee2e2;
+}
+
+/* ============================================
+   BOTÃO NOVO USUÁRIO
+   ============================================ */
+
+.painel-admin-btn-new {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem 1.5rem;
+  background: #9333ea;
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s;
+  margin-bottom: 1.5rem;
+}
+
+.painel-admin-btn-new:hover {
+  background: #7e22ce;
+  transform: translateY(-2px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+/* ============================================
+   FORMULÁRIO
+   ============================================ */
+
+.painel-admin-form {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: #f5f3ff;
+  border-radius: 0.75rem;
+  border: 2px solid #e9d5ff;
+}
+
+.painel-admin-form-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.painel-admin-form-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0;
+}
+
+.painel-admin-btn-close {
+  background: none;
+  border: none;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.2s;
+}
+
+.painel-admin-btn-close:hover {
+  color: #374151;
+}
+
+.painel-admin-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+.painel-admin-form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.painel-admin-form-group.full-width {
+  grid-column: span 2;
+}
+
+.painel-admin-form-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 0.5rem;
+}
+
+.painel-admin-form-input,
+.painel-admin-form-select {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 2px solid #d1d5db;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  transition: all 0.2s;
+}
+
+.painel-admin-form-input:focus,
+.painel-admin-form-select:focus {
+  outline: none;
+  border-color: #9333ea;
+  box-shadow: 0 0 0 3px rgba(147, 51, 234, 0.1);
+}
+
+.painel-admin-password-wrapper {
+  position: relative;
+}
+
+.painel-admin-btn-toggle-password {
+  position: absolute;
+  right: 0.75rem;
+  top: 0.75rem;
+  background: none;
+  border: none;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 0;
+}
+
+.painel-admin-btn-toggle-password:hover {
+  color: #374151;
+}
+
+.painel-admin-form-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.painel-admin-btn-save {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1.5rem;
+  background: #9333ea;
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.painel-admin-btn-save:hover:not(:disabled) {
+  background: #7e22ce;
+}
+
+.painel-admin-btn-save:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+}
+
+.painel-admin-btn-cancel {
+  padding: 0.75rem 1.5rem;
+  background: #e5e7eb;
+  color: #374151;
+  border: none;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.painel-admin-btn-cancel:hover {
+  background: #d1d5db;
+}
+
+/* ============================================
+   MENSAGENS
+   ============================================ */
+
+.painel-admin-message {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  text-align: center;
+  font-weight: 600;
+}
+
+.painel-admin-message.success {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.painel-admin-message.error {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* ============================================
+   LISTA DE USUÁRIOS
+   ============================================ */
+
+.painel-admin-list-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 1rem;
+}
+
+.painel-admin-user-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.painel-admin-user-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  background: #f9fafb;
+  border-radius: 0.5rem;
+  border-left: 4px solid #9333ea;
+  transition: all 0.2s;
+}
+
+.painel-admin-user-card:hover {
+  background: #f3f4f6;
+}
+
+.painel-admin-user-info {
+  flex: 1;
+}
+
+.painel-admin-user-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.painel-admin-user-icon {
+  font-size: 1.5rem;
+}
+
+.painel-admin-user-name {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0;
+}
+
+.painel-admin-user-details {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin: 0.25rem 0;
+}
+
+.painel-admin-user-badges {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.painel-admin-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.painel-admin-badge.admin {
+  background: #ede9fe;
+  color: #6b21a8;
+}
+
+.painel-admin-badge.receptionist {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.painel-admin-badge.department {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.painel-admin-badge.panel {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.painel-admin-user-date {
+  font-size: 0.75rem;
+  color: #9ca3af;
+}
+
+.painel-admin-user-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.painel-admin-btn-edit,
+.painel-admin-btn-delete {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.painel-admin-btn-edit {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.painel-admin-btn-edit:hover {
+  background: #bfdbfe;
+}
+
+.painel-admin-btn-delete {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.painel-admin-btn-delete:hover {
+  background: #fecaca;
+}
+
+/* ============================================
+   ESTADO VAZIO
+   ============================================ */
+
+.painel-admin-empty {
+  text-align: center;
+  padding: 3rem 0;
+  color: #6b7280;
+}
+
+/* ============================================
+   RESPONSIVIDADE
+   ============================================ */
+
+@media (max-width: 768px) {
+  .painel-admin-container {
+    padding: 1rem;
+  }
+
+  .painel-admin-card {
+    padding: 1.5rem;
+  }
+
+  .painel-admin-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .painel-admin-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .painel-admin-form-group.full-width {
+    grid-column: span 1;
+  }
+
+  .painel-admin-user-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .painel-admin-user-actions {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .painel-admin-btn-edit,
+  .painel-admin-btn-delete {
+    flex: 1;
+  }
+}
+
+/* ============================================
+   ANIMAÇÕES
+   ============================================ */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.painel-admin-card,
+.painel-admin-user-card,
+.painel-admin-form {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* ============================================
+   FIM DOS ESTILOS
+   ============================================ */

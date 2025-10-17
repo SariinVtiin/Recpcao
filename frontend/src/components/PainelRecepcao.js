@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { User, Building2, LogOut, Send } from 'lucide-react';
+import './PainelRecepcao.css';
 
 export default function PainelRecepcao({ usuario, onLogout }) {
   const [nome, setNome] = useState('');
@@ -92,27 +93,34 @@ export default function PainelRecepcao({ usuario, onLogout }) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8">
-      <div className="max-w-2xl mx-auto">
+    <div className="painel-recepcao-container">
+      {/* Fundo com Imagem */}
+      <div className="painel-recepcao-background"></div>
+      
+      {/* Overlay Gradiente */}
+      <div className="painel-recepcao-overlay"></div>
+
+      {/* Conteúdo */}
+      <div className="painel-recepcao-content">
         {/* Estatísticas do Dia */}
         {estatisticas && estatisticas.length > 0 && (
-          <div className="grid grid-cols-2 gap-4 mb-6">
+          <div className="painel-recepcao-stats-grid">
             {estatisticas.map((stat) => (
-              <div key={stat.departamento_nome} className="bg-white rounded-xl shadow-lg p-4">
-                <div className="text-sm text-gray-600 mb-1">
+              <div key={stat.departamento_nome} className="painel-recepcao-stat-card">
+                <div className="painel-recepcao-stat-dept">
                   {stat.departamento_nome.replace('Departamento ', '')}
                 </div>
-                <div className="flex items-end justify-between">
-                  <div className="text-3xl font-bold text-gray-800">
+                <div className="painel-recepcao-stat-content">
+                  <div className="painel-recepcao-stat-number">
                     {stat.total_visitas}
                   </div>
-                  <div className="text-xs text-gray-500 space-y-1">
-                    <div className="flex items-center">
-                      <div className="w-2 h-2 bg-green-500 rounded-full mr-1"></div>
+                  <div className="painel-recepcao-stat-details">
+                    <div className="painel-recepcao-stat-item">
+                      <div className="painel-recepcao-stat-dot atendidos"></div>
                       {stat.atendidos} atendidos
                     </div>
-                    <div className="flex items-center">
-                      <div className="w-2 h-2 bg-yellow-500 rounded-full mr-1"></div>
+                    <div className="painel-recepcao-stat-item">
+                      <div className="painel-recepcao-stat-dot aguardando"></div>
                       {stat.aguardando} aguardando
                     </div>
                   </div>
@@ -122,30 +130,31 @@ export default function PainelRecepcao({ usuario, onLogout }) {
           </div>
         )}
 
-        <div className="bg-white rounded-2xl shadow-2xl p-8">
-          <div className="flex justify-between items-center mb-8 pb-6 border-b-2 border-gray-100">
-            <div className="flex items-center">
-              <div className="inline-flex items-center justify-center w-12 h-12 bg-blue-600 rounded-full mr-3">
+        {/* Card Principal */}
+        <div className="painel-recepcao-card">
+          {/* Header */}
+          <div className="painel-recepcao-header">
+            <div className="painel-recepcao-header-left">
+              <div className="painel-recepcao-icon">
                 <Send className="text-white" size={24} />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-800">Painel Recepção</h1>
-                <p className="text-sm text-gray-600">{usuario.nome}</p>
+                <h1 className="painel-recepcao-title">Painel Recepção</h1>
+                <p className="painel-recepcao-subtitle">{usuario.nome}</p>
               </div>
             </div>
-            <button
-              onClick={onLogout}
-              className="flex items-center px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100"
-            >
+            <button onClick={onLogout} className="painel-recepcao-btn-logout">
               <LogOut size={18} className="mr-2" />
               Sair
             </button>
           </div>
 
-          <div className="space-y-6">
-            <div>
-              <label className="flex items-center text-sm font-semibold text-gray-700 mb-2">
-                <User size={18} className="mr-2 text-blue-600" />
+          {/* Formulário */}
+          <div className="painel-recepcao-form">
+            {/* Nome Completo */}
+            <div className="painel-recepcao-form-group">
+              <label className="painel-recepcao-label">
+                <User size={18} className="painel-recepcao-label-icon" />
                 Nome Completo
               </label>
               <input
@@ -154,12 +163,13 @@ export default function PainelRecepcao({ usuario, onLogout }) {
                 onChange={(e) => setNome(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder="Digite o nome completo"
-                className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
+                className="painel-recepcao-input"
               />
             </div>
 
-            <div>
-              <label className="flex items-center text-sm font-semibold text-gray-700 mb-2">
+            {/* CPF */}
+            <div className="painel-recepcao-form-group">
+              <label className="painel-recepcao-label">
                 CPF
               </label>
               <input
@@ -169,13 +179,14 @@ export default function PainelRecepcao({ usuario, onLogout }) {
                 onKeyPress={handleKeyPress}
                 placeholder="000.000.000-00"
                 maxLength="14"
-                className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
+                className="painel-recepcao-input"
               />
-              <p className="text-xs text-gray-500 mt-1">Formato: 000.000.000-00</p>
+              <p className="painel-recepcao-input-hint">Formato: 000.000.000-00</p>
             </div>
 
-            <div>
-              <label className="flex items-center text-sm font-semibold text-gray-700 mb-2">
+            {/* Motivo */}
+            <div className="painel-recepcao-form-group">
+              <label className="painel-recepcao-label">
                 Motivo da Visita
               </label>
               <input
@@ -184,12 +195,13 @@ export default function PainelRecepcao({ usuario, onLogout }) {
                 onChange={(e) => setMotivo(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder="Ex: Entrega de documentos"
-                className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
+                className="painel-recepcao-input"
               />
             </div>
 
-            <div>
-              <label className="flex items-center text-sm font-semibold text-gray-700 mb-2">
+            {/* Observação */}
+            <div className="painel-recepcao-form-group">
+              <label className="painel-recepcao-label">
                 Observação (opcional)
               </label>
               <input
@@ -198,61 +210,48 @@ export default function PainelRecepcao({ usuario, onLogout }) {
                 onChange={(e) => setObservacao(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder="Ex: Levar pasta azul"
-                className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
+                className="painel-recepcao-input"
               />
             </div>
 
-            <div>
-              <label className="flex items-center text-sm font-semibold text-gray-700 mb-2">
-                <Building2 size={18} className="mr-2 text-blue-600" />
+            {/* Departamento */}
+            <div className="painel-recepcao-form-group">
+              <label className="painel-recepcao-label">
+                <Building2 size={18} className="painel-recepcao-label-icon" />
                 Departamento de Destino
               </label>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="painel-recepcao-dept-grid">
                 <button
                   onClick={() => setDepartamentoId(1)}
-                  className={`p-4 rounded-lg border-2 transition-all ${
-                    departamentoId === 1
-                      ? 'bg-blue-600 text-white border-blue-600'
-                      : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400'
-                  }`}
+                  className={`painel-recepcao-dept-btn operacional ${departamentoId === 1 ? 'active' : ''}`}
                 >
-                  <div className="font-semibold">Operacional</div>
-                  <div className="text-sm opacity-80">Sala 1</div>
+                  <div className="painel-recepcao-dept-name">Operacional</div>
+                  <div className="painel-recepcao-dept-location">Sala 1</div>
                 </button>
                 
                 <button
                   onClick={() => setDepartamentoId(2)}
-                  className={`p-4 rounded-lg border-2 transition-all ${
-                    departamentoId === 2
-                      ? 'bg-green-600 text-white border-green-600'
-                      : 'bg-white text-gray-700 border-gray-300 hover:border-green-400'
-                  }`}
+                  className={`painel-recepcao-dept-btn pessoal ${departamentoId === 2 ? 'active' : ''}`}
                 >
-                  <div className="font-semibold">Pessoal</div>
-                  <div className="text-sm opacity-80">Sala 2</div>
+                  <div className="painel-recepcao-dept-name">Pessoal</div>
+                  <div className="painel-recepcao-dept-location">Sala 2</div>
                 </button>
               </div>
             </div>
 
+            {/* Botão Registrar */}
             <button
               onClick={registrarVisita}
               disabled={carregando}
-              className={`w-full py-4 rounded-lg font-bold text-lg text-white transition-all ${
-                carregando
-                  ? 'bg-gray-400 cursor-not-allowed'
-                  : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg'
-              }`}
+              className="painel-recepcao-btn-submit"
             >
               {carregando ? 'Registrando...' : 'Registrar Visitante'}
             </button>
           </div>
 
+          {/* Mensagem de Feedback */}
           {mensagem && (
-            <div className={`mt-6 p-4 rounded-lg text-center font-semibold ${
-              mensagem.includes('✅') 
-                ? 'bg-green-100 text-green-800' 
-                : 'bg-red-100 text-red-800'
-            }`}>
+            <div className={`painel-recepcao-message ${mensagem.includes('✅') ? 'success' : 'error'}`}>
               {mensagem}
             </div>
           )}

@@ -1,10 +1,12 @@
+// App.js - Sistema de Recepção Empresarial
+// Integração de todos os componentes
+
 import React, { useState } from 'react';
 import TelaLogin from './components/TelaLogin';
 import PainelRecepcao from './components/PainelRecepcao';
 import PainelDepartamento from './components/PainelDepartamento';
-import PainelTV from './components/PainelTV';
 import PainelAdmin from './components/PainelAdmin';
-import './App.css';
+import PainelTV from './components/PainelTV';
 
 export default function App() {
   const [usuarioLogado, setUsuarioLogado] = useState(null);
@@ -16,7 +18,6 @@ export default function App() {
 
   const handleLogout = () => {
     setUsuarioLogado(null);
-    console.log('Logout realizado');
   };
 
   // Se não estiver logado, mostra tela de login
@@ -39,8 +40,7 @@ export default function App() {
       return <PainelTV />;
     
     default:
-      // Se perfil desconhecido, volta para login
-      console.error('Perfil desconhecido:', usuarioLogado.perfil);
+      // Se perfil não reconhecido, volta para login
       return <TelaLogin onLogin={handleLogin} />;
   }
 }

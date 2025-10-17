@@ -1,7 +1,7 @@
 // ============================================
 // SERVER.JS - Sistema de Recepção Empresarial
 // Backend: Node.js + Express + MySQL
-// Conforme Documentação Oficial
+// Versão: 2.0 - COM 3 ESTADOS
 // ============================================
 
 const express = require('express');
@@ -22,7 +22,7 @@ const pool = mysql.createPool({
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
-  timezone: '-03:00' // Ajuste para seu fuso horário
+  timezone: '-03:00'
 });
 
 // ============================================
@@ -61,16 +61,9 @@ app.get('/api/status', async (req, res) => {
 // ============================================
 // AUTENTICAÇÃO - RF006
 // ============================================
-
-/**
- * POST /api/auth/login
- * RF006 - Controle de Acesso
- * RF007 - Perfis de Usuário
- */
 app.post('/api/auth/login', async (req, res) => {
   const { usuario, senha } = req.body;
   
-  // Validação básica
   if (!usuario || !senha) {
     return res.status(400).json({ 
       error: 'Usuário e senha são obrigatórios' 
@@ -99,8 +92,6 @@ app.post('/api/auth/login', async (req, res) => {
     }
 
     const user = rows[0];
-    
-    // Log de acesso
     console.log(`Login bem-sucedido: ${user.nome} (${user.perfil})`);
 
     res.json({
@@ -110,7 +101,7 @@ app.post('/api/auth/login', async (req, res) => {
       perfil: user.perfil,
       departamento_id: user.departamento_id,
       departamento_nome: user.departamento_nome,
-      tipo_acesso: user.perfil // Compatibilidade com código React antigo
+      tipo_acesso: user.perfil
     });
   } catch (err) {
     console.error('Erro ao fazer login:', err);
@@ -121,11 +112,6 @@ app.post('/api/auth/login', async (req, res) => {
 // ============================================
 // VISITANTES - RF001
 // ============================================
-
-/**
- * GET /api/visitantes
- * Lista todos os visitantes cadastrados
- */
 app.get('/api/visitantes', async (req, res) => {
   try {
     const [rows] = await pool.query(
@@ -146,17 +132,13 @@ app.get('/api/visitantes', async (req, res) => {
   }
 });
 
-/**
- * GET /api/visitantes/:cpf
- * Busca visitante por CPF
- */
 app.get('/api/visitantes/:cpf', async (req, res) => {
   const { cpf } = req.params;
   
   try {
     const [rows] = await pool.query(
       'SELECT * FROM visitantes WHERE cpf = ?',
-      [cpf.replace(/\D/g, '')] // Remove formatação
+      [cpf.replace(/\D/g, '')]
     );
     
     if (rows.length === 0) {
@@ -173,16 +155,9 @@ app.get('/api/visitantes/:cpf', async (req, res) => {
 // ============================================
 // VISITAS - RF001, RF002, RF003, RF005
 // ============================================
-
-/**
- * POST /api/visitas
- * RF001 - Cadastro de Visitantes
- * Usa a stored procedure sp_registrar_visita
- */
 app.post('/api/visitas', async (req, res) => {
   const { nome, cpf, departamento_id, motivo, observacao, usuario_id } = req.body;
   
-  // Validação
   if (!nome || !cpf || !departamento_id) {
     return res.status(400).json({ 
       error: 'Nome, CPF e departamento são obrigatórios' 
@@ -190,24 +165,19 @@ app.post('/api/visitas', async (req, res) => {
   }
 
   try {
-    // Remove formatação do CPF
     const cpfLimpo = cpf.replace(/\D/g, '');
     
-    // Valida CPF (11 dígitos)
     if (cpfLimpo.length !== 11) {
       return res.status(400).json({ error: 'CPF inválido' });
     }
 
-    // Chama a stored procedure
     const [result] = await pool.query(
       `CALL sp_registrar_visita(?, ?, ?, ?, ?, ?, @visita_id, @visitante_id)`,
       [cpfLimpo, nome, departamento_id, motivo, observacao, usuario_id]
     );
 
-    // Busca os IDs retornados
     const [ids] = await pool.query('SELECT @visita_id as visita_id, @visitante_id as visitante_id');
     
-    // Busca a visita completa
     const [visita] = await pool.query(
       'SELECT * FROM visitas_completas WHERE visita_id = ?',
       [ids[0].visita_id]
@@ -222,11 +192,6 @@ app.post('/api/visitas', async (req, res) => {
   }
 });
 
-/**
- * GET /api/visitas
- * RF005 - Histórico de Visitas
- * RF009 - Relatórios e Consultas
- */
 app.get('/api/visitas', async (req, res) => {
   const { status, departamento_id, data_inicio, data_fim, cpf } = req.query;
   
@@ -234,7 +199,6 @@ app.get('/api/visitas', async (req, res) => {
     let query = 'SELECT * FROM visitas_completas WHERE 1=1';
     const params = [];
 
-    // Filtros opcionais
     if (status) {
       query += ' AND status = ?';
       params.push(status);
@@ -265,9 +229,13 @@ app.get('/api/visitas', async (req, res) => {
   }
 });
 
+// ============================================
+// VISITAS - ESTADOS: AGUARDANDO, CHAMADO, ATENDIDO
+// ============================================
+
 /**
  * GET /api/visitas/aguardando/:departamento_id
- * RF002 - Consulta de Visitantes em Espera
+ * RF002 - Lista visitantes aguardando (laranja)
  */
 app.get('/api/visitas/aguardando/:departamento_id', async (req, res) => {
   const { departamento_id } = req.params;
@@ -288,16 +256,37 @@ app.get('/api/visitas/aguardando/:departamento_id', async (req, res) => {
 });
 
 /**
+ * GET /api/visitas/chamados/:departamento_id
+ * RF003 - Lista visitantes em atendimento (azul)
+ */
+app.get('/api/visitas/chamados/:departamento_id', async (req, res) => {
+  const { departamento_id } = req.params;
+  
+  try {
+    const [rows] = await pool.query(
+      `SELECT * FROM visitas_completas 
+      WHERE status = 'chamado' 
+      AND departamento_id = ?
+      ORDER BY hora_chamada DESC`,
+      [departamento_id]
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error('Erro ao buscar visitas em atendimento:', err);
+    res.status(500).json({ error: 'Erro ao buscar visitas em atendimento' });
+  }
+});
+
+/**
  * GET /api/visitas/ultima
- * RF003 - Chamada de Visitante
- * RF004 - Atualização Automática (para o painel)
+ * RF004 - Última chamada para o Display TV
+ * Busca apenas visitantes com status 'chamado'
  */
 app.get('/api/visitas/ultima', async (req, res) => {
   try {
     const [rows] = await pool.query(
       `SELECT * FROM visitas_completas 
-      WHERE status = 'atendido'
-        AND hora_chamada IS NOT NULL
+      WHERE status = 'chamado'
       ORDER BY hora_chamada DESC 
       LIMIT 1`
     );
@@ -311,8 +300,8 @@ app.get('/api/visitas/ultima', async (req, res) => {
 
 /**
  * PUT /api/visitas/:id/chamar
- * RF003 - Chamada de Visitante
- * Atualiza status para 'atendido' (vai direto para histórico)
+ * RF003 - Chamar visitante
+ * Muda status de 'aguardando' para 'chamado'
  */
 app.put('/api/visitas/:id/chamar', async (req, res) => {
   const { id } = req.params;
@@ -320,10 +309,10 @@ app.put('/api/visitas/:id/chamar', async (req, res) => {
   try {
     console.log(`Tentando chamar visita ID: ${id}`);
     
-    // Atualiza status para 'atendido' (sai da fila)
+    // Atualiza status para 'chamado' (em atendimento)
     const [result] = await pool.query(
       `UPDATE visitas 
-      SET status = 'atendido', hora_chamada = NOW()
+      SET status = 'chamado', hora_chamada = NOW()
       WHERE id = ? AND status = 'aguardando'`,
       [id]
     );
@@ -334,7 +323,6 @@ app.put('/api/visitas/:id/chamar', async (req, res) => {
       return res.status(404).json({ error: 'Visita não encontrada ou já foi chamada' });
     }
 
-    // Busca a visita atualizada
     const [rows] = await pool.query(
       'SELECT * FROM visitas_completas WHERE visita_id = ?',
       [id]
@@ -344,7 +332,7 @@ app.put('/api/visitas/:id/chamar', async (req, res) => {
       return res.status(404).json({ error: 'Visita não encontrada após atualização' });
     }
 
-    console.log(`Chamada realizada: ${rows[0].visitante_nome}`);
+    console.log(`Visitante chamado: ${rows[0].visitante_nome} - Status: chamado`);
 
     res.json(rows[0]);
   } catch (err) {
@@ -354,8 +342,52 @@ app.put('/api/visitas/:id/chamar', async (req, res) => {
 });
 
 /**
+ * PUT /api/visitas/:id/finalizar
+ * RF008 - Finalizar Atendimento
+ * Muda status de 'chamado' para 'atendido'
+ */
+app.put('/api/visitas/:id/finalizar', async (req, res) => {
+  const { id } = req.params;
+  
+  try {
+    console.log(`Tentando finalizar visita ID: ${id}`);
+    
+    // Atualiza status para 'atendido' e define hora_saida
+    const [result] = await pool.query(
+      `UPDATE visitas 
+      SET status = 'atendido', hora_saida = NOW()
+      WHERE id = ? AND status = 'chamado'`,
+      [id]
+    );
+
+    console.log(`Linhas afetadas: ${result.affectedRows}`);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Visita não encontrada ou não está em atendimento' });
+    }
+
+    const [rows] = await pool.query(
+      'SELECT * FROM visitas_completas WHERE visita_id = ?',
+      [id]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Visita não encontrada após finalização' });
+    }
+
+    console.log(`Atendimento finalizado: ${rows[0].visitante_nome}`);
+
+    res.json(rows[0]);
+  } catch (err) {
+    console.error('Erro ao finalizar atendimento:', err);
+    res.status(500).json({ error: 'Erro ao finalizar atendimento: ' + err.message });
+  }
+});
+
+/**
  * PUT /api/visitas/:id/rechamar
- * Rechamar visitante que estava no histórico
+ * Rechamar visitante - volta de 'chamado' para 'aguardando'
+ * Usado quando visitante não comparece após ser chamado
  */
 app.put('/api/visitas/:id/rechamar', async (req, res) => {
   const { id } = req.params;
@@ -363,21 +395,20 @@ app.put('/api/visitas/:id/rechamar', async (req, res) => {
   try {
     console.log(`Tentando rechamar visita ID: ${id}`);
     
-    // Volta status para 'aguardando' e limpa hora_saida
+    // Volta status para 'aguardando' e limpa hora_chamada
     const [result] = await pool.query(
       `UPDATE visitas 
-      SET status = 'aguardando', hora_saida = NULL
-      WHERE id = ? AND status = 'atendido'`,
+      SET status = 'aguardando', hora_chamada = NULL
+      WHERE id = ? AND status = 'chamado'`,
       [id]
     );
 
     console.log(`Linhas afetadas: ${result.affectedRows}`);
 
     if (result.affectedRows === 0) {
-      return res.status(404).json({ error: 'Visita não encontrada ou já está aguardando' });
+      return res.status(404).json({ error: 'Visita não encontrada ou não está em atendimento' });
     }
 
-    // Busca a visita atualizada
     const [rows] = await pool.query(
       'SELECT * FROM visitas_completas WHERE visita_id = ?',
       [id]
@@ -387,7 +418,7 @@ app.put('/api/visitas/:id/rechamar', async (req, res) => {
       return res.status(404).json({ error: 'Visita não encontrada após rechamada' });
     }
 
-    console.log(`Visitante rechamado: ${rows[0].visitante_nome}`);
+    console.log(`Visitante rechamado: ${rows[0].visitante_nome} - Voltou para aguardando`);
 
     res.json(rows[0]);
   } catch (err) {
@@ -397,47 +428,13 @@ app.put('/api/visitas/:id/rechamar', async (req, res) => {
 });
 
 /**
- * PUT /api/visitas/:id/atender
- * RF008 - Encerramento de Atendimento (Opcional - para marcar como finalizado)
- */
-app.put('/api/visitas/:id/atender', async (req, res) => {
-  const { id } = req.params;
-  
-  try {
-    await pool.query(
-      `UPDATE visitas 
-      SET hora_saida = NOW()
-      WHERE id = ? AND status = 'atendido'`,
-      [id]
-    );
-
-    const [rows] = await pool.query(
-      'SELECT * FROM visitas_completas WHERE visita_id = ?',
-      [id]
-    );
-
-    if (rows.length === 0) {
-      return res.status(404).json({ error: 'Visita não encontrada' });
-    }
-
-    console.log(`Atendimento finalizado: ${rows[0].visitante_nome}`);
-
-    res.json(rows[0]);
-  } catch (err) {
-    console.error('Erro ao finalizar atendimento:', err);
-    res.status(500).json({ error: 'Erro ao finalizar atendimento' });
-  }
-});
-
-/**
  * DELETE /api/visitas/:id
- * RF010 - Edição e Cancelamento de Registros
+ * RF010 - Cancelamento de Registros
  */
 app.delete('/api/visitas/:id', async (req, res) => {
   const { id } = req.params;
   
   try {
-    // Verifica se a visita existe e não foi atendida
     const [visita] = await pool.query(
       'SELECT status FROM visitas WHERE id = ?',
       [id]
@@ -465,13 +462,8 @@ app.delete('/api/visitas/:id', async (req, res) => {
 });
 
 // ============================================
-// USUÁRIOS - CRUD (Apenas Administradores)
+// USUÁRIOS - CRUD (Administradores)
 // ============================================
-
-/**
- * GET /api/usuarios
- * Lista todos os usuários
- */
 app.get('/api/usuarios', async (req, res) => {
   try {
     const [rows] = await pool.query(`
@@ -495,28 +487,21 @@ app.get('/api/usuarios', async (req, res) => {
   }
 });
 
-/**
- * POST /api/usuarios
- * Criar novo usuário
- */
 app.post('/api/usuarios', async (req, res) => {
   const { nome, login, senha, perfil, departamento_id } = req.body;
   
-  // Validação
   if (!nome || !login || !senha || !perfil) {
     return res.status(400).json({ 
       error: 'Nome, login, senha e perfil são obrigatórios' 
     });
   }
 
-  // Validar perfil
   const perfisValidos = ['recepcionista', 'departamento', 'painel', 'administrador'];
   if (!perfisValidos.includes(perfil)) {
     return res.status(400).json({ error: 'Perfil inválido' });
   }
 
   try {
-    // Verificar se login já existe
     const [existe] = await pool.query(
       'SELECT id FROM usuarios WHERE login = ?',
       [login]
@@ -526,14 +511,12 @@ app.post('/api/usuarios', async (req, res) => {
       return res.status(400).json({ error: 'Login já existe' });
     }
 
-    // Criar usuário
     const [result] = await pool.query(
       `INSERT INTO usuarios (nome, login, senha, perfil, departamento_id, ativo) 
        VALUES (?, ?, ?, ?, ?, 1)`,
       [nome, login, senha, perfil, departamento_id || null]
     );
 
-    // Buscar usuário criado
     const [usuario] = await pool.query(
       `SELECT 
         u.id, u.nome, u.login, u.perfil, u.departamento_id,
@@ -553,16 +536,11 @@ app.post('/api/usuarios', async (req, res) => {
   }
 });
 
-/**
- * PUT /api/usuarios/:id
- * Atualizar usuário
- */
 app.put('/api/usuarios/:id', async (req, res) => {
   const { id } = req.params;
   const { nome, login, senha, perfil, departamento_id, ativo } = req.body;
 
   try {
-    // Verificar se usuário existe
     const [usuarioExiste] = await pool.query(
       'SELECT id FROM usuarios WHERE id = ?',
       [id]
@@ -572,7 +550,6 @@ app.put('/api/usuarios/:id', async (req, res) => {
       return res.status(404).json({ error: 'Usuário não encontrado' });
     }
 
-    // Verificar se login já está em uso por outro usuário
     if (login) {
       const [loginEmUso] = await pool.query(
         'SELECT id FROM usuarios WHERE login = ? AND id != ?',
@@ -584,7 +561,6 @@ app.put('/api/usuarios/:id', async (req, res) => {
       }
     }
 
-    // Construir query de atualização dinamicamente
     const campos = [];
     const valores = [];
 
@@ -624,7 +600,6 @@ app.put('/api/usuarios/:id', async (req, res) => {
       valores
     );
 
-    // Buscar usuário atualizado
     const [usuario] = await pool.query(
       `SELECT 
         u.id, u.nome, u.login, u.perfil, u.departamento_id,
@@ -644,15 +619,10 @@ app.put('/api/usuarios/:id', async (req, res) => {
   }
 });
 
-/**
- * DELETE /api/usuarios/:id
- * Deletar usuário (soft delete - apenas desativa)
- */
 app.delete('/api/usuarios/:id', async (req, res) => {
   const { id } = req.params;
 
   try {
-    // Verificar se não está tentando deletar o próprio usuário admin
     const [usuario] = await pool.query(
       'SELECT login FROM usuarios WHERE id = ?',
       [id]
@@ -668,7 +638,6 @@ app.delete('/api/usuarios/:id', async (req, res) => {
       });
     }
 
-    // Soft delete - apenas desativa
     await pool.query(
       'UPDATE usuarios SET ativo = 0 WHERE id = ?',
       [id]
@@ -686,11 +655,6 @@ app.delete('/api/usuarios/:id', async (req, res) => {
 // ============================================
 // DEPARTAMENTOS
 // ============================================
-
-/**
- * GET /api/departamentos
- * Lista todos os departamentos
- */
 app.get('/api/departamentos', async (req, res) => {
   try {
     const [rows] = await pool.query('SELECT * FROM departamentos ORDER BY nome');
@@ -704,11 +668,6 @@ app.get('/api/departamentos', async (req, res) => {
 // ============================================
 // RELATÓRIOS - RF009
 // ============================================
-
-/**
- * GET /api/relatorios/dia
- * Estatísticas do dia atual
- */
 app.get('/api/relatorios/dia', async (req, res) => {
   try {
     const [rows] = await pool.query(`
@@ -729,10 +688,6 @@ app.get('/api/relatorios/dia', async (req, res) => {
   }
 });
 
-/**
- * GET /api/relatorios/periodo
- * Relatório por período
- */
 app.get('/api/relatorios/periodo', async (req, res) => {
   const { data_inicio, data_fim } = req.query;
   
@@ -777,12 +732,11 @@ app.use((req, res) => {
 // ============================================
 app.listen(port, "0.0.0.0", async () => {
   console.log('================================================');
-  console.log('🚀 SISTEMA DE RECEPÇÃO EMPRESARIAL');
+  console.log('🚀 SISTEMA DE RECEPÇÃO EMPRESARIAL V2.0');
   console.log('================================================');
   console.log(`✅ Servidor rodando em http://192.167.2.41:${port}`);
   console.log(`⏰ Iniciado em: ${new Date().toLocaleString('pt-BR')}`);
   
-  // Testa conexão com banco
   try {
     await pool.query('SELECT 1');
     console.log('✅ Banco de dados conectado');
@@ -800,14 +754,17 @@ app.listen(port, "0.0.0.0", async () => {
   console.log('   DELETE /api/usuarios/:id');
   console.log('   POST /api/visitas');
   console.log('   GET  /api/visitas');
-  console.log('   GET  /api/visitas/ultima');
   console.log('   GET  /api/visitas/aguardando/:departamento_id');
+  console.log('   GET  /api/visitas/chamados/:departamento_id  ⭐ NOVO');
+  console.log('   GET  /api/visitas/ultima');
   console.log('   PUT  /api/visitas/:id/chamar');
-  console.log('   PUT  /api/visitas/:id/atender');
+  console.log('   PUT  /api/visitas/:id/finalizar  ⭐ NOVO');
   console.log('   DELETE /api/visitas/:id');
   console.log('   GET  /api/departamentos');
   console.log('   GET  /api/visitantes');
   console.log('   GET  /api/relatorios/dia');
   console.log('   GET  /api/relatorios/periodo');
+  console.log('================================================');
+  console.log('🎯 FLUXO: Aguardando → Chamado → Atendido');
   console.log('================================================');
 });

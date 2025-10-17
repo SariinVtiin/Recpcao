@@ -1,0 +1,567 @@
+/* ============================================
+   PAINEL TV - ESTILOS
+   Sistema de Recepção Empresarial
+   Display para Chamadas de Visitantes
+   ============================================ */
+
+/* Container Principal */
+.painel-tv-container {
+  min-height: 100vh;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Fundo com Imagem */
+.painel-tv-background {
+  position: absolute;
+  inset: 0;
+  background-image: url('C:\Users\jonathan01062\Documents\CODE\RECEPÇÃO\Recepcao\frontend\public\confederal.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  filter: brightness(0.4);
+  z-index: 0;
+}
+
+/* Overlay Azul/Cinza */
+.painel-tv-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+/* Wrapper do Conteúdo */
+.painel-tv-content {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* ============================================
+   HEADER COM RELÓGIO
+   ============================================ */
+
+.painel-tv-header {
+  background: rgba(30, 64, 175, 0.8);
+  backdrop-filter: blur(12px);
+  padding: 1.5rem;
+
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  border-bottom: 4px solid #60a5fa;
+}
+
+.painel-tv-header-content {
+  max-width: 1280px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.painel-tv-title {
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: white;
+  margin: 0;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  text-align: left;
+}
+
+.painel-tv-clock-wrapper {
+  text-align: right;
+}
+
+.painel-tv-clock {
+  display: flex;
+  align-items: center;
+  color: white;
+  font-size: 1.5rem;
+  font-family: 'Courier New', monospace;
+  margin-bottom: 0.25rem;
+}
+
+.painel-tv-clock-icon {
+  margin-right: 0.5rem;
+}
+
+.painel-tv-date {
+  color: #bfdbfe;
+  font-size: 0.875rem;
+  text-transform: capitalize;
+  justify-content: left;
+}
+
+/* ============================================
+   CONTEÚDO PRINCIPAL
+   ============================================ */
+
+.painel-tv-main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+/* ============================================
+   CARD DE CHAMADA ATIVO
+   ============================================ */
+
+.painel-tv-chamada-wrapper {
+  width: 100%;
+  max-width: 1280px;
+}
+
+.painel-tv-chamada-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 1.5rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+  border: 4px solid rgba(255, 255, 255, 0.3);
+  animation: slideIn 0.5s ease-out;
+}
+
+.painel-tv-dept-indicator {
+  height: 0.75rem;
+}
+
+.painel-tv-dept-indicator.operacional {
+  background: #2563eb;
+}
+
+.painel-tv-dept-indicator.pessoal {
+  background: #059669;
+}
+
+.painel-tv-chamada-content {
+  padding: 3rem;
+}
+
+.painel-tv-chamada-header {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+}
+
+.painel-tv-volume-icon {
+  color: #2563eb;
+  margin-right: 1rem;
+  margin-top: 0.5rem;
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.painel-tv-chamada-info {
+  flex: 1;
+}
+
+.painel-tv-chamada-label {
+  color: #6b7280;
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.painel-tv-visitante-nome {
+  font-size: 3.75rem;
+  font-weight: 700;
+  color: #111827;
+  line-height: 1.1;
+  margin-bottom: 1rem;
+  word-break: break-word;
+}
+
+.painel-tv-dept-box {
+  padding: 1.5rem;
+  border-radius: 1rem;
+  font-size: 1.875rem;
+  font-weight: 600;
+}
+
+.painel-tv-dept-box.operacional {
+  background: #dbeafe;
+  color: #1e3a8a;
+}
+
+.painel-tv-dept-box.pessoal {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.painel-tv-dept-label {
+  margin-bottom: 0.5rem;
+  font-size: 1.25rem;
+  opacity: 0.75;
+}
+
+.painel-tv-dept-name-wrapper {
+  display: flex;
+  align-items: center;
+}
+
+.painel-tv-dept-arrow {
+  font-size: 3rem;
+  margin-right: 0.75rem;
+}
+
+.painel-tv-dept-name {
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+/* ============================================
+   ESTADO DE ESPERA (SEM CHAMADAS)
+   ============================================ */
+
+.painel-tv-waiting {
+  text-align: center;
+  animation: fadeIn 0.5s ease-out;
+}
+
+.painel-tv-waiting-icon-wrapper {
+  display: inline-block;
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.painel-tv-waiting-icon {
+  color: #60a5fa;
+  margin-bottom: 1rem;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3));
+}
+
+.painel-tv-waiting-title {
+  font-size: 2.25rem;
+  font-weight: 700;
+  color: white;
+  margin-bottom: 1rem;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.painel-tv-waiting-subtitle {
+  color: #93c5fd;
+  font-size: 1.25rem;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* ============================================
+   ANIMAÇÕES
+   ============================================ */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(30px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes slideInFromLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes bounceIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+  70% {
+    transform: scale(0.9);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.painel-tv-visitante-nome {
+  animation: bounceIn 0.6s ease-out;
+}
+
+.painel-tv-dept-box {
+  animation: slideInFromLeft 0.5s ease-out 0.3s backwards;
+}
+
+/* ============================================
+   TRANSIÇÕES SUAVES
+   ============================================ */
+
+.painel-tv-chamada-card,
+.painel-tv-waiting {
+  transition: all 0.3s ease-out;
+}
+
+/* ============================================
+   RESPONSIVIDADE
+   ============================================ */
+
+@media (max-width: 1280px) {
+  .painel-tv-header-content {
+    padding: 0 1rem;
+  }
+
+  .painel-tv-visitante-nome {
+    font-size: 3rem;
+  }
+
+  .painel-tv-dept-name {
+    font-size: 1.5rem;
+  }
+
+  .painel-tv-dept-arrow {
+    font-size: 2.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .painel-tv-header {
+    padding: 1rem;
+  }
+
+  .painel-tv-header-content {
+    flex-direction: column;
+    gap: 1rem;
+    text-align: center;
+  }
+
+  .painel-tv-clock-wrapper {
+    text-align: center;
+  }
+
+  .painel-tv-title {
+    font-size: 1.5rem;
+  }
+
+  .painel-tv-clock {
+    font-size: 1.25rem;
+    justify-content: center;
+  }
+
+  .painel-tv-main {
+    padding: 1rem;
+  }
+
+  .painel-tv-chamada-content {
+    padding: 2rem;
+  }
+
+  .painel-tv-chamada-header {
+    flex-direction: column;
+  }
+
+  .painel-tv-volume-icon {
+    margin-right: 0;
+    margin-bottom: 1rem;
+  }
+
+  .painel-tv-chamada-label {
+    font-size: 1.25rem;
+  }
+
+  .painel-tv-visitante-nome {
+    font-size: 2rem;
+  }
+
+  .painel-tv-dept-box {
+    padding: 1rem;
+    font-size: 1.25rem;
+  }
+
+  .painel-tv-dept-label {
+    font-size: 1rem;
+  }
+
+  .painel-tv-dept-name {
+    font-size: 1.25rem;
+  }
+
+  .painel-tv-dept-arrow {
+    font-size: 2rem;
+  }
+
+  .painel-tv-waiting-title {
+    font-size: 1.75rem;
+  }
+
+  .painel-tv-waiting-subtitle {
+    font-size: 1rem;
+  }
+}
+
+/* ============================================
+   MODO FULLSCREEN
+   ============================================ */
+
+.painel-tv-container:fullscreen {
+  background: #000;
+}
+
+.painel-tv-container:-webkit-full-screen {
+  background: #000;
+}
+
+.painel-tv-container:-moz-full-screen {
+  background: #000;
+}
+
+/* ============================================
+   ACESSIBILIDADE
+   ============================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  .painel-tv-chamada-card,
+  .painel-tv-waiting,
+  .painel-tv-visitante-nome,
+  .painel-tv-dept-box {
+    animation: none;
+  }
+
+  .painel-tv-volume-icon,
+  .painel-tv-waiting-icon-wrapper {
+    animation: none;
+  }
+}
+
+/* ============================================
+   ALTA VISIBILIDADE
+   ============================================ */
+
+@media (prefers-contrast: high) {
+  .painel-tv-chamada-card {
+    border: 4px solid #000;
+  }
+
+  .painel-tv-title,
+  .painel-tv-waiting-title {
+    text-shadow: 0 0 4px rgba(0, 0, 0, 0.8);
+  }
+}
+
+/* ============================================
+   ORIENTAÇÃO LANDSCAPE (RECOMENDADA PARA TV)
+   ============================================ */
+
+@media (orientation: landscape) and (min-width: 1024px) {
+  .painel-tv-chamada-content {
+    padding: 4rem;
+  }
+
+  .painel-tv-visitante-nome {
+    font-size: 4.5rem;
+  }
+
+  .painel-tv-dept-name {
+    font-size: 2.5rem;
+  }
+}
+
+/* ============================================
+   IMPRESSÃO (DESABILITADA)
+   ============================================ */
+
+@media print {
+  .painel-tv-container {
+    display: none !important;
+  }
+}
+
+/* ============================================
+   ESTADOS ESPECIAIS
+   ============================================ */
+
+/* Quando há nova chamada (destaque extra) */
+.painel-tv-chamada-card.new-call {
+  animation: bounceIn 0.6s ease-out, glow 1s ease-in-out 3;
+}
+
+@keyframes glow {
+  0%, 100% {
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  }
+  50% {
+    box-shadow: 0 25px 50px -12px rgba(37, 99, 235, 0.5),
+                0 0 30px rgba(37, 99, 235, 0.3);
+  }
+}
+
+/* Timeout warning (quando passar de 1:30 min de chamada) */
+.painel-tv-chamada-card.timeout-warning {
+  animation: shake 0.5s ease-in-out;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-10px); }
+  75% { transform: translateX(10px); }
+}
+
+/* ============================================
+   TEMAS POR DEPARTAMENTO
+   ============================================ */
+
+/* Operacional - Azul */
+.painel-tv-container.dept-operacional .painel-tv-header {
+  background: rgba(30, 64, 175, 0.8);
+  border-bottom-color: #60a5fa;
+}
+
+/* Pessoal - Verde */
+.painel-tv-container.dept-pessoal .painel-tv-header {
+  background: rgba(5, 150, 105, 0.8);
+  border-bottom-color: #34d399;
+}
+
+/* ============================================
+   DARK MODE (Opcional para horários noturnos)
+   ============================================ */
+
+@media (prefers-color-scheme: dark) {
+  .painel-tv-chamada-card {
+    background: rgba(17, 24, 39, 0.95);
+  }
+
+  .painel-tv-visitante-nome {
+    color: #f9fafb;
+  }
+
+  .painel-tv-chamada-label {
+    color: #d1d5db;
+  }
+}
+
+/* ============================================
+   FIM DOS ESTILOS
+   ============================================ */

@@ -16,9 +16,13 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: #f8fafc;
+  background: #000000;
   color: #1e293b;
   overflow-x: hidden;
+  background-image: url('C:\Users\jonathan01062\Documents\CODE\RECEPÇÃO\Recepcao\frontend\public\confederal.png'); /* Altere esse caminho */
+  background-size: cover; /* Ajusta a imagem para cobrir toda a tela */
+  background-repeat: no-repeat; /* Impede que a imagem se repita */
+  background-position: center center; /* Centraliza a imagem */
 }
 
 code {
@@ -534,6 +538,8 @@ a {
 .perfil-administrador {
   background: #ede9fe;
   color: #6b21a8;
+  background-color: #1e293b;
+  background-image: url('C:\Users\jonathan01062\Documents\CODE\RECEPÇÃO\Recepcao\frontend\public\confederal.png'); /* Altere esse caminho */
 }
 
 .perfil-recepcionista {

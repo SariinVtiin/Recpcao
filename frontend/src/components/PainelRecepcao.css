@@ -1,0 +1,536 @@
+/* ============================================
+   PAINEL RECEPÇÃO - ESTILOS
+   Sistema de Recepção Empresarial
+   ============================================ */
+
+/* Container Principal */
+.painel-recepcao-container {
+  min-height: 100vh;
+  position: relative;
+  overflow: hidden;
+  padding: 2rem;
+}
+
+/* Fundo com Imagem */
+.painel-recepcao-background {
+  position: absolute;
+  inset: 0;
+  background-image: url('C:\Users\jonathan01062\Documents\CODE\RECEPÇÃO\Recepcao\frontend\public\confederal.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  filter: brightness(0.3);
+  z-index: 0;
+}
+
+/* Overlay Azul/Índigo */
+.painel-recepcao-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+/* Wrapper do Conteúdo */
+.painel-recepcao-content {
+  position: relative;
+  z-index: 10;
+  max-width: 672px;
+  margin: 0 auto;
+}
+
+/* ============================================
+   ESTATÍSTICAS DO DIA
+   ============================================ */
+
+.painel-recepcao-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.painel-recepcao-stat-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  padding: 1rem;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.painel-recepcao-stat-dept {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-bottom: 0.25rem;
+}
+
+.painel-recepcao-stat-content {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+}
+
+.painel-recepcao-stat-number {
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.painel-recepcao-stat-details {
+  font-size: 0.75rem;
+  color: #6b7280;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.painel-recepcao-stat-item {
+  display: flex;
+  align-items: center;
+}
+
+.painel-recepcao-stat-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 9999px;
+  margin-right: 0.25rem;
+}
+
+.painel-recepcao-stat-dot.atendidos {
+  background: #22c55e;
+}
+
+.painel-recepcao-stat-dot.aguardando {
+  background: #eab308;
+}
+
+/* ============================================
+   CARD PRINCIPAL
+   ============================================ */
+
+.painel-recepcao-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 1rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  padding: 2rem;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+/* ============================================
+   HEADER
+   ============================================ */
+
+.painel-recepcao-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 2px solid #f1f5f9;
+}
+
+.painel-recepcao-header-left {
+  display: flex;
+  align-items: center;
+}
+
+.painel-recepcao-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  background: #2563eb;
+  border-radius: 9999px;
+  margin-right: 0.75rem;
+}
+
+.painel-recepcao-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0;
+}
+
+.painel-recepcao-subtitle {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+.painel-recepcao-btn-logout {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  background: #fef2f2;
+  color: #dc2626;
+  border: none;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.painel-recepcao-btn-logout:hover {
+  background: #fee2e2;
+}
+
+/* ============================================
+   FORMULÁRIO
+   ============================================ */
+
+.painel-recepcao-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.painel-recepcao-form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.painel-recepcao-label {
+  display: flex;
+  align-items: center;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 0.5rem;
+}
+
+.painel-recepcao-label-icon {
+  margin-right: 0.5rem;
+  color: #2563eb;
+}
+
+.painel-recepcao-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 2px solid #d1d5db;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  transition: all 0.2s;
+}
+
+.painel-recepcao-input:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.painel-recepcao-input::placeholder {
+  color: #9ca3af;
+}
+
+.painel-recepcao-input-hint {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-top: 0.25rem;
+}
+
+/* ============================================
+   SELEÇÃO DE DEPARTAMENTO
+   ============================================ */
+
+.painel-recepcao-dept-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+.painel-recepcao-dept-btn {
+  padding: 1rem;
+  border-radius: 0.5rem;
+  border: 2px solid;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: white;
+  text-align: left;
+}
+
+.painel-recepcao-dept-btn:not(.active) {
+  border-color: #d1d5db;
+  color: #374151;
+}
+
+.painel-recepcao-dept-btn:not(.active):hover {
+  border-color: #93c5fd;
+}
+
+.painel-recepcao-dept-btn.operacional.active {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: white;
+}
+
+.painel-recepcao-dept-btn.pessoal.active {
+  background: #059669;
+  border-color: #059669;
+  color: white;
+}
+
+.painel-recepcao-dept-name {
+  font-weight: 600;
+  font-size: 1rem;
+  margin-bottom: 0.25rem;
+}
+
+.painel-recepcao-dept-location {
+  font-size: 0.875rem;
+  opacity: 0.8;
+}
+
+/* ============================================
+   BOTÃO REGISTRAR
+   ============================================ */
+
+.painel-recepcao-btn-submit {
+  width: 100%;
+  padding: 1rem;
+  border: none;
+  border-radius: 0.5rem;
+  font-weight: 700;
+  font-size: 1.125rem;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+.painel-recepcao-btn-submit:not(:disabled) {
+  background: linear-gradient(to right, #2563eb, #4f46e5);
+}
+
+.painel-recepcao-btn-submit:not(:disabled):hover {
+  background: linear-gradient(to right, #1d4ed8, #4338ca);
+  transform: translateY(-2px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+.painel-recepcao-btn-submit:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+}
+
+/* ============================================
+   MENSAGEM DE FEEDBACK
+   ============================================ */
+
+.painel-recepcao-message {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  text-align: center;
+  font-weight: 600;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.painel-recepcao-message.success {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.painel-recepcao-message.error {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* ============================================
+   ANIMAÇÕES
+   ============================================ */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.painel-recepcao-card,
+.painel-recepcao-stat-card {
+  animation: slideUp 0.3s ease-out;
+}
+
+.painel-recepcao-form-group {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.painel-recepcao-form-group:nth-child(1) { animation-delay: 0.05s; }
+.painel-recepcao-form-group:nth-child(2) { animation-delay: 0.1s; }
+.painel-recepcao-form-group:nth-child(3) { animation-delay: 0.15s; }
+.painel-recepcao-form-group:nth-child(4) { animation-delay: 0.2s; }
+.painel-recepcao-form-group:nth-child(5) { animation-delay: 0.25s; }
+
+/* ============================================
+   ESTADOS DE FOCO E INTERAÇÃO
+   ============================================ */
+
+.painel-recepcao-input:focus,
+.painel-recepcao-dept-btn:focus {
+  outline: none;
+}
+
+.painel-recepcao-btn-submit:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* ============================================
+   RESPONSIVIDADE
+   ============================================ */
+
+@media (max-width: 768px) {
+  .painel-recepcao-container {
+    padding: 1rem;
+  }
+
+  .painel-recepcao-card {
+    padding: 1.5rem;
+  }
+
+  .painel-recepcao-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .painel-recepcao-stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .painel-recepcao-dept-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .painel-recepcao-title {
+    font-size: 1.25rem;
+  }
+
+  .painel-recepcao-btn-submit {
+    font-size: 1rem;
+    padding: 0.875rem;
+  }
+}
+
+/* ============================================
+   ACESSIBILIDADE
+   ============================================ */
+
+.painel-recepcao-input:focus-visible,
+.painel-recepcao-dept-btn:focus-visible,
+.painel-recepcao-btn-submit:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+/* ============================================
+   ESTADOS ESPECIAIS
+   ============================================ */
+
+/* Quando o formulário está sendo enviado */
+.painel-recepcao-form.loading {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+/* Sucesso no envio */
+.painel-recepcao-card.success-animation {
+  animation: successPulse 0.6s ease-out;
+}
+
+@keyframes successPulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+}
+
+/* ============================================
+   TEMAS CUSTOMIZADOS POR DEPARTAMENTO
+   ============================================ */
+
+/* Quando Operacional está selecionado */
+.painel-recepcao-container.dept-operacional .painel-recepcao-input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+/* Quando Pessoal está selecionado */
+.painel-recepcao-container.dept-pessoal .painel-recepcao-input:focus {
+  border-color: #059669;
+  box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.1);
+}
+
+/* ============================================
+   MELHORIAS DE UX
+   ============================================ */
+
+/* Highlight do campo quando há erro */
+.painel-recepcao-input.error {
+  border-color: #ef4444;
+  animation: shake 0.3s ease-in-out;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+/* Loading spinner no botão */
+.painel-recepcao-btn-submit.loading::after {
+  content: '';
+  width: 16px;
+  height: 16px;
+  margin-left: 8px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  display: inline-block;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ============================================
+   IMPRESSÃO
+   ============================================ */
+
+@media print {
+  .painel-recepcao-background,
+  .painel-recepcao-overlay,
+  .painel-recepcao-btn-logout,
+  .painel-recepcao-btn-submit {
+    display: none !important;
+  }
+
+  .painel-recepcao-card {
+    box-shadow: none;
+    border: 1px solid #e5e7eb;
+  }
+}
+
+/* ============================================
+   FIM DOS ESTILOS
+   ============================================ */
