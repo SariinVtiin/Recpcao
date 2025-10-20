@@ -1,12 +1,13 @@
 // ============================================
 // SERVER.JS - Sistema de Recepção Empresarial
-// Backend: Node.js + Express + MySQL
-// Versão: 2.0 - COM 3 ESTADOS
+// Backend: Node.js + Express + MySQL + Bcrypt
+// Versão: 2.0 - COM 3 ESTADOS + SEGURANÇA
 // ============================================
 
 const express = require('express');
 const cors = require('cors');
 const mysql = require('mysql2/promise');
+const bcrypt = require('bcrypt');
 
 const app = express();
 const port = 3001;
@@ -24,6 +25,36 @@ const pool = mysql.createPool({
   queueLimit: 0,
   timezone: '-03:00'
 });
+
+// ============================================
+// FUNÇÃO: Migrar senhas para hash (executa na inicialização)
+// ============================================
+async function migrarSenhasParaHash() {
+  try {
+    const [usuarios] = await pool.query(
+      'SELECT id, login, senha FROM usuarios WHERE LENGTH(senha) < 60'
+    );
+    
+    if (usuarios.length > 0) {
+      console.log(`🔄 Migrando ${usuarios.length} senhas para hash bcrypt...`);
+      
+      for (const user of usuarios) {
+        const hashedPassword = await bcrypt.hash(user.senha, 10);
+        await pool.query(
+          'UPDATE usuarios SET senha = ? WHERE id = ?',
+          [hashedPassword, user.id]
+        );
+        console.log(`   ✅ ${user.login} - senha criptografada`);
+      }
+      
+      console.log('✅ Migração de senhas concluída!');
+    } else {
+      console.log('✅ Todas as senhas já estão em hash bcrypt');
+    }
+  } catch (err) {
+    console.error('⚠️ Erro na migração de senhas:', err.message);
+  }
+}
 
 // ============================================
 // MIDDLEWARES
@@ -47,6 +78,7 @@ app.get('/api/status', async (req, res) => {
       status: 'online', 
       message: 'Servidor e banco de dados conectados',
       usuarios: rows[0].total,
+      seguranca: 'bcrypt habilitado',
       timestamp: new Date().toISOString()
     });
   } catch (err) {
@@ -59,7 +91,7 @@ app.get('/api/status', async (req, res) => {
 });
 
 // ============================================
-// AUTENTICAÇÃO - RF006
+// AUTENTICAÇÃO - RF006 (COM BCRYPT)
 // ============================================
 app.post('/api/auth/login', async (req, res) => {
   const { usuario, senha } = req.body;
@@ -75,14 +107,15 @@ app.post('/api/auth/login', async (req, res) => {
       `SELECT 
         u.id, 
         u.nome, 
-        u.login, 
+        u.login,
+        u.senha,
         u.perfil,
         u.departamento_id,
         d.nome as departamento_nome
       FROM usuarios u
       LEFT JOIN departamentos d ON u.departamento_id = d.id
-      WHERE u.login = ? AND u.senha = ? AND u.ativo = 1`,
-      [usuario, senha]
+      WHERE u.login = ? AND u.ativo = 1`,
+      [usuario]
     );
 
     if (rows.length === 0) {
@@ -92,8 +125,20 @@ app.post('/api/auth/login', async (req, res) => {
     }
 
     const user = rows[0];
-    console.log(`Login bem-sucedido: ${user.nome} (${user.perfil})`);
 
+    // Comparar senha com hash usando bcrypt
+    const senhaValida = await bcrypt.compare(senha, user.senha);
+
+    if (!senhaValida) {
+      console.log(`❌ Tentativa de login falhou: ${usuario}`);
+      return res.status(401).json({ 
+        error: 'Usuário ou senha inválidos' 
+      });
+    }
+
+    console.log(`✅ Login bem-sucedido: ${user.nome} (${user.perfil})`);
+
+    // Remover senha do retorno
     res.json({
       id: user.id,
       nome: user.nome,
@@ -280,16 +325,27 @@ app.get('/api/visitas/chamados/:departamento_id', async (req, res) => {
 /**
  * GET /api/visitas/ultima
  * RF004 - Última chamada para o Display TV
- * Busca apenas visitantes com status 'chamado'
+ * Busca APENAS a chamada mais recente que:
+ * - Está com status 'chamado' (em atendimento)
+ * - Foi chamada nos últimos 2 minutos
+ * - NÃO foi finalizada (hora_saida é NULL)
  */
 app.get('/api/visitas/ultima', async (req, res) => {
   try {
     const [rows] = await pool.query(
       `SELECT * FROM visitas_completas 
       WHERE status = 'chamado'
+      AND hora_chamada >= DATE_SUB(NOW(), INTERVAL 2 MINUTE)
+      AND hora_saida IS NULL
       ORDER BY hora_chamada DESC 
       LIMIT 1`
     );
+    
+    if (rows.length > 0) {
+      console.log('📺 Última chamada ativa:', rows[0].visitante_nome, '(ID:', rows[0].visita_id, ')');
+    } else {
+      console.log('📺 Nenhuma chamada ativa no momento');
+    }
     
     res.json(rows[0] || null);
   } catch (err) {
@@ -388,17 +444,20 @@ app.put('/api/visitas/:id/finalizar', async (req, res) => {
  * PUT /api/visitas/:id/rechamar
  * Rechamar visitante - volta de 'chamado' para 'aguardando'
  * Usado quando visitante não comparece após ser chamado
+ * LIMPA hora_chamada para não aparecer no painel
  */
 app.put('/api/visitas/:id/rechamar', async (req, res) => {
   const { id } = req.params;
   
   try {
-    console.log(`Tentando rechamar visita ID: ${id}`);
+    console.log(`🔄 Tentando rechamar visita ID: ${id}`);
     
-    // Volta status para 'aguardando' e limpa hora_chamada
+    // Volta status para 'aguardando' e LIMPA hora_chamada
     const [result] = await pool.query(
       `UPDATE visitas 
-      SET status = 'aguardando', hora_chamada = NULL
+      SET status = 'aguardando', 
+          hora_chamada = NULL,
+          hora_saida = NULL
       WHERE id = ? AND status = 'chamado'`,
       [id]
     );
@@ -418,7 +477,7 @@ app.put('/api/visitas/:id/rechamar', async (req, res) => {
       return res.status(404).json({ error: 'Visita não encontrada após rechamada' });
     }
 
-    console.log(`Visitante rechamado: ${rows[0].visitante_nome} - Voltou para aguardando`);
+    console.log(`✅ Visitante rechamado: ${rows[0].visitante_nome} - Voltou para aguardando (hora_chamada limpa)`);
 
     res.json(rows[0]);
   } catch (err) {
@@ -462,7 +521,7 @@ app.delete('/api/visitas/:id', async (req, res) => {
 });
 
 // ============================================
-// USUÁRIOS - CRUD (Administradores)
+// USUÁRIOS - CRUD (COM BCRYPT)
 // ============================================
 app.get('/api/usuarios', async (req, res) => {
   try {
@@ -480,6 +539,8 @@ app.get('/api/usuarios', async (req, res) => {
       LEFT JOIN departamentos d ON u.departamento_id = d.id
       ORDER BY u.created_at DESC
     `);
+    
+    // Nunca retornar senhas
     res.json(rows);
   } catch (err) {
     console.error('Erro ao listar usuários:', err);
@@ -511,10 +572,13 @@ app.post('/api/usuarios', async (req, res) => {
       return res.status(400).json({ error: 'Login já existe' });
     }
 
+    // Criptografar senha com bcrypt
+    const senhaHash = await bcrypt.hash(senha, 10);
+
     const [result] = await pool.query(
       `INSERT INTO usuarios (nome, login, senha, perfil, departamento_id, ativo) 
        VALUES (?, ?, ?, ?, ?, 1)`,
-      [nome, login, senha, perfil, departamento_id || null]
+      [nome, login, senhaHash, perfil, departamento_id || null]
     );
 
     const [usuario] = await pool.query(
@@ -527,7 +591,7 @@ app.post('/api/usuarios', async (req, res) => {
       [result.insertId]
     );
 
-    console.log(`Novo usuário criado: ${nome} (${login})`);
+    console.log(`✅ Novo usuário criado: ${nome} (${login})`);
 
     res.status(201).json(usuario[0]);
   } catch (err) {
@@ -572,9 +636,11 @@ app.put('/api/usuarios/:id', async (req, res) => {
       campos.push('login = ?');
       valores.push(login);
     }
+    // Se senha foi fornecida, criptografar com bcrypt
     if (senha !== undefined && senha.trim() !== '') {
+      const senhaHash = await bcrypt.hash(senha, 10);
       campos.push('senha = ?');
-      valores.push(senha);
+      valores.push(senhaHash);
     }
     if (perfil !== undefined) {
       campos.push('perfil = ?');
@@ -610,7 +676,7 @@ app.put('/api/usuarios/:id', async (req, res) => {
       [id]
     );
 
-    console.log(`Usuário atualizado: ${usuario[0].nome} (ID: ${id})`);
+    console.log(`✅ Usuário atualizado: ${usuario[0].nome} (ID: ${id})`);
 
     res.json(usuario[0]);
   } catch (err) {
@@ -733,6 +799,7 @@ app.use((req, res) => {
 app.listen(port, "0.0.0.0", async () => {
   console.log('================================================');
   console.log('🚀 SISTEMA DE RECEPÇÃO EMPRESARIAL V2.0');
+  console.log('🔒 COM SEGURANÇA BCRYPT');
   console.log('================================================');
   console.log(`✅ Servidor rodando em http://192.167.2.41:${port}`);
   console.log(`⏰ Iniciado em: ${new Date().toLocaleString('pt-BR')}`);
@@ -740,6 +807,10 @@ app.listen(port, "0.0.0.0", async () => {
   try {
     await pool.query('SELECT 1');
     console.log('✅ Banco de dados conectado');
+    
+    // Migrar senhas automaticamente
+    await migrarSenhasParaHash();
+    
   } catch (err) {
     console.error('❌ Erro ao conectar ao banco:', err.message);
   }
@@ -747,18 +818,19 @@ app.listen(port, "0.0.0.0", async () => {
   console.log('================================================');
   console.log('📋 Endpoints disponíveis:');
   console.log('   GET  /api/status');
-  console.log('   POST /api/auth/login');
+  console.log('   POST /api/auth/login 🔒');
   console.log('   GET  /api/usuarios');
-  console.log('   POST /api/usuarios');
-  console.log('   PUT  /api/usuarios/:id');
+  console.log('   POST /api/usuarios 🔒');
+  console.log('   PUT  /api/usuarios/:id 🔒');
   console.log('   DELETE /api/usuarios/:id');
   console.log('   POST /api/visitas');
   console.log('   GET  /api/visitas');
   console.log('   GET  /api/visitas/aguardando/:departamento_id');
-  console.log('   GET  /api/visitas/chamados/:departamento_id  ⭐ NOVO');
+  console.log('   GET  /api/visitas/chamados/:departamento_id');
   console.log('   GET  /api/visitas/ultima');
   console.log('   PUT  /api/visitas/:id/chamar');
-  console.log('   PUT  /api/visitas/:id/finalizar  ⭐ NOVO');
+  console.log('   PUT  /api/visitas/:id/finalizar');
+  console.log('   PUT  /api/visitas/:id/rechamar');
   console.log('   DELETE /api/visitas/:id');
   console.log('   GET  /api/departamentos');
   console.log('   GET  /api/visitantes');
@@ -766,5 +838,6 @@ app.listen(port, "0.0.0.0", async () => {
   console.log('   GET  /api/relatorios/periodo');
   console.log('================================================');
   console.log('🎯 FLUXO: Aguardando → Chamado → Atendido');
+  console.log('🔒 Senhas protegidas com bcrypt (salt rounds: 10)');
   console.log('================================================');
 });
