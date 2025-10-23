@@ -1,32 +1,45 @@
 /* ============================================
-   PAINEL DEPARTAMENTO - ESTILOS
+   PAINEL DEPARTAMENTO - ESTILOS CORRIGIDOS
    Sistema de Recepção Empresarial
+   Correção: Imagem de fundo cobrindo toda a tela
    ============================================ */
 
-/* Container Principal */
+/* Container Principal - CORRIGIDO */
 .painel-dept-container {
   min-height: 100vh;
+  width: 100%;
   position: relative;
-  overflow: hidden;
+  overflow-x: hidden; /* Evita scroll horizontal */
+  overflow-y: auto; /* Permite scroll vertical se necessário */
   padding: 2rem;
 }
 
-/* Fundo com Imagem */
+/* Fundo com Imagem - CORRIGIDO PARA COBRIR TODA A TELA */
 .painel-dept-background {
-  position: absolute;
-  inset: 0;
-  background-image: url("C:\Users\jonathan01062\Documents\CODE\RECEPÇÃO\Recepcao\frontend\public\confederal.png");
-  background-size: cover;
-  background-position: center;
+  position: fixed; /* MUDADO DE absolute PARA fixed */
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw; /* Largura total da viewport */
+  height: 100vh; /* Altura total da viewport */
+  background-image: url('C:\Users\jonathan01062\Documents\CODE\RECEPÇÃO\Recpcao\frontend\public\confederal.png');
+  background-position: center center;
   background-repeat: no-repeat;
+  background-size: cover; /* ADICIONADO: Faz a imagem cobrir toda a área */
   filter: brightness(0.3);
   z-index: 0;
 }
 
-/* Overlay Verde/Esmeralda */
+/* Overlay Verde/Esmeralda - CORRIGIDO */
 .painel-dept-overlay {
-  position: absolute;
-  inset: 0;
+  position: fixed; /* MUDADO DE absolute PARA fixed */
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 100vh;
   z-index: 1;
 }
 
@@ -42,6 +55,7 @@
 .painel-dept-card {
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px); /* Safari */
   border-radius: 1rem;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   padding: 2rem;
@@ -75,6 +89,7 @@
   background: #059669;
   border-radius: 9999px;
   margin-right: 0.75rem;
+  color: white;
 }
 
 .painel-dept-title {
@@ -93,6 +108,7 @@
 .painel-dept-btn-logout {
   display: flex;
   align-items: center;
+  gap: 0.5rem;
   padding: 0.5rem 1rem;
   background: #fef2f2;
   color: #dc2626;
@@ -143,7 +159,7 @@
 .painel-dept-tab.aguardando.active {
   background: #ea580c;
   color: white;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 10px 15px -3px rgba(234, 88, 12, 0.3);
 }
 
 .painel-dept-tab.chamados {
@@ -158,7 +174,7 @@
 .painel-dept-tab.chamados.active {
   background: #2563eb;
   color: white;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.3);
 }
 
 .painel-dept-tab.finalizados {
@@ -173,7 +189,7 @@
 .painel-dept-tab.finalizados.active {
   background: #059669;
   color: white;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 10px 15px -3px rgba(5, 150, 105, 0.3);
 }
 
 /* ============================================
@@ -204,6 +220,8 @@
 .painel-dept-empty-icon {
   margin: 0 auto 1rem;
   opacity: 0.3;
+  width: 64px;
+  height: 64px;
 }
 
 .painel-dept-empty-text {
@@ -235,6 +253,7 @@
 
 .painel-dept-visita-card.aguardando:hover {
   background: #ffedd5;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
 /* Card Chamado */
@@ -252,6 +271,7 @@
 
 .painel-dept-visita-card.chamado:hover {
   background: #dbeafe;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
 /* Card Finalizado */
@@ -266,6 +286,7 @@
 
 .painel-dept-visita-card.finalizado:hover {
   background: #dcfce7;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
 /* Info do Visitante */
@@ -278,6 +299,7 @@
   align-items: center;
   gap: 0.75rem;
   margin-bottom: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .painel-dept-visita-nome {
@@ -291,6 +313,8 @@
   border-radius: 9999px;
   font-size: 0.75rem;
   font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
 }
 
 .painel-dept-badge.aguardando {
@@ -334,6 +358,7 @@
   margin-top: 0.5rem;
   display: flex;
   gap: 1rem;
+  flex-wrap: wrap;
 }
 
 /* Detalhes Finalizados */
@@ -352,10 +377,15 @@
   margin-bottom: 0.25rem;
 }
 
+.painel-dept-detalhe-linha:last-child {
+  margin-bottom: 0;
+}
+
 .painel-dept-detalhe-linha.total {
   border-top: 1px solid #e5e7eb;
-  padding-top: 0.25rem;
-  margin-top: 0.25rem;
+  padding-top: 0.5rem;
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
 }
 
 .painel-dept-detalhe-label {
@@ -374,12 +404,14 @@
 .painel-dept-actions {
   display: flex;
   gap: 0.75rem;
+  flex-wrap: wrap;
 }
 
 .painel-dept-btn {
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 0.5rem;
   padding: 1rem 2rem;
   border: none;
   border-radius: 0.75rem;
@@ -388,16 +420,22 @@
   cursor: pointer;
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
   transition: all 0.2s;
+  white-space: nowrap;
 }
 
 .painel-dept-btn:hover:not(:disabled) {
-  transform: scale(1.05);
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15);
+}
+
+.painel-dept-btn:active:not(:disabled) {
+  transform: translateY(0);
 }
 
 .painel-dept-btn:disabled {
   cursor: not-allowed;
   opacity: 0.5;
+  background: linear-gradient(to right, #9ca3af, #6b7280) !important;
 }
 
 .painel-dept-btn.chamar {
@@ -428,10 +466,6 @@
   background: linear-gradient(to right, #047857, #065f46);
 }
 
-.painel-dept-btn:disabled {
-  background: linear-gradient(to right, #9ca3af, #6b7280);
-}
-
 /* ============================================
    FOOTER COM RESUMO
    ============================================ */
@@ -453,6 +487,11 @@
   border-radius: 0.5rem;
   text-align: center;
   border: 2px solid;
+  transition: transform 0.2s;
+}
+
+.painel-dept-stat-card:hover {
+  transform: translateY(-2px);
 }
 
 .painel-dept-stat-card.aguardando {
@@ -554,6 +593,15 @@
     gap: 1rem;
   }
 
+  .painel-dept-header-left {
+    width: 100%;
+  }
+
+  .painel-dept-btn-logout {
+    width: 100%;
+    justify-content: center;
+  }
+
   .painel-dept-tabs {
     flex-direction: column;
   }
@@ -583,6 +631,55 @@
     flex-direction: column;
     gap: 0.25rem;
   }
+}
+
+@media (max-width: 480px) {
+  .painel-dept-container {
+    padding: 0.5rem;
+  }
+
+  .painel-dept-card {
+    padding: 1rem;
+    border-radius: 0.5rem;
+  }
+
+  .painel-dept-title {
+    font-size: 1.25rem;
+  }
+
+  .painel-dept-visita-nome {
+    font-size: 1rem;
+  }
+
+  .painel-dept-btn {
+    padding: 0.75rem 0.5rem;
+    font-size: 0.875rem;
+  }
+}
+
+/* ============================================
+   MELHORIAS DE ACESSIBILIDADE
+   ============================================ */
+
+/* Foco visível para navegação por teclado */
+.painel-dept-btn:focus,
+.painel-dept-tab:focus,
+.painel-dept-btn-logout:focus {
+  outline: 3px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* Melhor contraste para leitores de tela */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
 }
 
 /* ============================================

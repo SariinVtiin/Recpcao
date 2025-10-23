@@ -1,13 +1,12 @@
 // ============================================
 // SERVER.JS - Sistema de Recepção Empresarial
-// Backend: Node.js + Express + MySQL + Bcrypt
-// Versão: 2.0 - COM 3 ESTADOS + SEGURANÇA
+// Backend: Node.js + Express + MySQL
+// Fluxo: aguardando → chamado → finalizado
 // ============================================
 
 const express = require('express');
 const cors = require('cors');
 const mysql = require('mysql2/promise');
-const bcrypt = require('bcrypt');
 
 const app = express();
 const port = 3001;
@@ -25,36 +24,6 @@ const pool = mysql.createPool({
   queueLimit: 0,
   timezone: '-03:00'
 });
-
-// ============================================
-// FUNÇÃO: Migrar senhas para hash (executa na inicialização)
-// ============================================
-async function migrarSenhasParaHash() {
-  try {
-    const [usuarios] = await pool.query(
-      'SELECT id, login, senha FROM usuarios WHERE LENGTH(senha) < 60'
-    );
-    
-    if (usuarios.length > 0) {
-      console.log(`🔄 Migrando ${usuarios.length} senhas para hash bcrypt...`);
-      
-      for (const user of usuarios) {
-        const hashedPassword = await bcrypt.hash(user.senha, 10);
-        await pool.query(
-          'UPDATE usuarios SET senha = ? WHERE id = ?',
-          [hashedPassword, user.id]
-        );
-        console.log(`   ✅ ${user.login} - senha criptografada`);
-      }
-      
-      console.log('✅ Migração de senhas concluída!');
-    } else {
-      console.log('✅ Todas as senhas já estão em hash bcrypt');
-    }
-  } catch (err) {
-    console.error('⚠️ Erro na migração de senhas:', err.message);
-  }
-}
 
 // ============================================
 // MIDDLEWARES
@@ -78,7 +47,6 @@ app.get('/api/status', async (req, res) => {
       status: 'online', 
       message: 'Servidor e banco de dados conectados',
       usuarios: rows[0].total,
-      seguranca: 'bcrypt habilitado',
       timestamp: new Date().toISOString()
     });
   } catch (err) {
@@ -91,12 +59,25 @@ app.get('/api/status', async (req, res) => {
 });
 
 // ============================================
-// AUTENTICAÇÃO - RF006 (COM BCRYPT)
+// AUTENTICAÇÃO - RF006
 // ============================================
+
+/**
+ * POST /api/auth/login
+ * RF006 - Controle de Acesso
+ * RF007 - Perfis de Usuário
+ */
 app.post('/api/auth/login', async (req, res) => {
   const { usuario, senha } = req.body;
   
+  console.log('=== TENTATIVA DE LOGIN ===');
+  console.log('Usuário recebido:', usuario);
+  console.log('Senha recebida:', senha);
+  console.log('Body completo:', req.body);
+  
+  // Validação básica
   if (!usuario || !senha) {
+    console.log('❌ Validação falhou: campos vazios');
     return res.status(400).json({ 
       error: 'Usuário e senha são obrigatórios' 
     });
@@ -107,38 +88,44 @@ app.post('/api/auth/login', async (req, res) => {
       `SELECT 
         u.id, 
         u.nome, 
-        u.login,
-        u.senha,
+        u.login, 
         u.perfil,
         u.departamento_id,
+        u.ativo,
         d.nome as departamento_nome
       FROM usuarios u
       LEFT JOIN departamentos d ON u.departamento_id = d.id
-      WHERE u.login = ? AND u.ativo = 1`,
-      [usuario]
+      WHERE u.login = ? AND u.senha = ?`,
+      [usuario, senha]
     );
 
+    console.log('Registros encontrados:', rows.length);
+    
+    if (rows.length > 0) {
+      console.log('Usuário encontrado:', rows[0].login);
+      console.log('Ativo?', rows[0].ativo);
+    }
+
     if (rows.length === 0) {
+      console.log('❌ Login falhou: usuário/senha incorretos');
       return res.status(401).json({ 
         error: 'Usuário ou senha inválidos' 
       });
     }
 
     const user = rows[0];
-
-    // Comparar senha com hash usando bcrypt
-    const senhaValida = await bcrypt.compare(senha, user.senha);
-
-    if (!senhaValida) {
-      console.log(`❌ Tentativa de login falhou: ${usuario}`);
+    
+    // Verifica se está ativo
+    if (user.ativo !== 1) {
+      console.log('❌ Login falhou: usuário inativo');
       return res.status(401).json({ 
-        error: 'Usuário ou senha inválidos' 
+        error: 'Usuário inativo' 
       });
     }
-
+    
+    // Log de acesso
     console.log(`✅ Login bem-sucedido: ${user.nome} (${user.perfil})`);
 
-    // Remover senha do retorno
     res.json({
       id: user.id,
       nome: user.nome,
@@ -149,7 +136,7 @@ app.post('/api/auth/login', async (req, res) => {
       tipo_acesso: user.perfil
     });
   } catch (err) {
-    console.error('Erro ao fazer login:', err);
+    console.error('❌ Erro ao fazer login:', err);
     res.status(500).json({ error: 'Erro ao processar login' });
   }
 });
@@ -157,6 +144,11 @@ app.post('/api/auth/login', async (req, res) => {
 // ============================================
 // VISITANTES - RF001
 // ============================================
+
+/**
+ * GET /api/visitantes
+ * Lista todos os visitantes cadastrados
+ */
 app.get('/api/visitantes', async (req, res) => {
   try {
     const [rows] = await pool.query(
@@ -177,6 +169,10 @@ app.get('/api/visitantes', async (req, res) => {
   }
 });
 
+/**
+ * GET /api/visitantes/:cpf
+ * Busca visitante por CPF
+ */
 app.get('/api/visitantes/:cpf', async (req, res) => {
   const { cpf } = req.params;
   
@@ -200,9 +196,16 @@ app.get('/api/visitantes/:cpf', async (req, res) => {
 // ============================================
 // VISITAS - RF001, RF002, RF003, RF005
 // ============================================
+
+/**
+ * POST /api/visitas
+ * RF001 - Cadastro de Visitantes
+ * Usa a stored procedure sp_registrar_visita
+ */
 app.post('/api/visitas', async (req, res) => {
   const { nome, cpf, departamento_id, motivo, observacao, usuario_id } = req.body;
   
+  // Validação
   if (!nome || !cpf || !departamento_id) {
     return res.status(400).json({ 
       error: 'Nome, CPF e departamento são obrigatórios' 
@@ -210,19 +213,37 @@ app.post('/api/visitas', async (req, res) => {
   }
 
   try {
+    // Remove formatação do CPF
     const cpfLimpo = cpf.replace(/\D/g, '');
     
+    // Valida CPF (11 dígitos)
     if (cpfLimpo.length !== 11) {
       return res.status(400).json({ error: 'CPF inválido' });
     }
 
+    // Valida se usuario_id existe (se fornecido)
+    let usuarioIdValido = null;
+    if (usuario_id) {
+      const [usuarioExiste] = await pool.query(
+        'SELECT id FROM usuarios WHERE id = ? AND ativo = 1',
+        [usuario_id]
+      );
+      
+      if (usuarioExiste.length > 0) {
+        usuarioIdValido = usuario_id;
+      }
+    }
+
+    // Chama a stored procedure
     const [result] = await pool.query(
       `CALL sp_registrar_visita(?, ?, ?, ?, ?, ?, @visita_id, @visitante_id)`,
-      [cpfLimpo, nome, departamento_id, motivo, observacao, usuario_id]
+      [cpfLimpo, nome, departamento_id, motivo, observacao, usuarioIdValido]
     );
 
+    // Busca os IDs retornados
     const [ids] = await pool.query('SELECT @visita_id as visita_id, @visitante_id as visitante_id');
     
+    // Busca a visita completa
     const [visita] = await pool.query(
       'SELECT * FROM visitas_completas WHERE visita_id = ?',
       [ids[0].visita_id]
@@ -237,6 +258,11 @@ app.post('/api/visitas', async (req, res) => {
   }
 });
 
+/**
+ * GET /api/visitas
+ * RF005 - Histórico de Visitas
+ * RF009 - Relatórios e Consultas
+ */
 app.get('/api/visitas', async (req, res) => {
   const { status, departamento_id, data_inicio, data_fim, cpf } = req.query;
   
@@ -244,6 +270,7 @@ app.get('/api/visitas', async (req, res) => {
     let query = 'SELECT * FROM visitas_completas WHERE 1=1';
     const params = [];
 
+    // Filtros opcionais
     if (status) {
       query += ' AND status = ?';
       params.push(status);
@@ -274,13 +301,9 @@ app.get('/api/visitas', async (req, res) => {
   }
 });
 
-// ============================================
-// VISITAS - ESTADOS: AGUARDANDO, CHAMADO, ATENDIDO
-// ============================================
-
 /**
  * GET /api/visitas/aguardando/:departamento_id
- * RF002 - Lista visitantes aguardando (laranja)
+ * RF002 - Consulta de Visitantes em Espera
  */
 app.get('/api/visitas/aguardando/:departamento_id', async (req, res) => {
   const { departamento_id } = req.params;
@@ -302,7 +325,8 @@ app.get('/api/visitas/aguardando/:departamento_id', async (req, res) => {
 
 /**
  * GET /api/visitas/chamados/:departamento_id
- * RF003 - Lista visitantes em atendimento (azul)
+ * Busca visitas com status 'chamado' para um departamento
+ * Ordenado por hora_chamada DESC (mais recente primeiro)
  */
 app.get('/api/visitas/chamados/:departamento_id', async (req, res) => {
   const { departamento_id } = req.params;
@@ -317,35 +341,26 @@ app.get('/api/visitas/chamados/:departamento_id', async (req, res) => {
     );
     res.json(rows);
   } catch (err) {
-    console.error('Erro ao buscar visitas em atendimento:', err);
-    res.status(500).json({ error: 'Erro ao buscar visitas em atendimento' });
+    console.error('Erro ao buscar visitas chamados:', err);
+    res.status(500).json({ error: 'Erro ao buscar visitas' });
   }
 });
 
 /**
  * GET /api/visitas/ultima
- * RF004 - Última chamada para o Display TV
- * Busca APENAS a chamada mais recente que:
- * - Está com status 'chamado' (em atendimento)
- * - Foi chamada nos últimos 2 minutos
- * - NÃO foi finalizada (hora_saida é NULL)
+ * RF003 - Chamada de Visitante
+ * RF004 - Atualização Automática (para o painel)
+ * Retorna a última visita chamada
  */
 app.get('/api/visitas/ultima', async (req, res) => {
   try {
     const [rows] = await pool.query(
       `SELECT * FROM visitas_completas 
       WHERE status = 'chamado'
-      AND hora_chamada >= DATE_SUB(NOW(), INTERVAL 2 MINUTE)
-      AND hora_saida IS NULL
+        AND hora_chamada IS NOT NULL
       ORDER BY hora_chamada DESC 
       LIMIT 1`
     );
-    
-    if (rows.length > 0) {
-      console.log('📺 Última chamada ativa:', rows[0].visitante_nome, '(ID:', rows[0].visita_id, ')');
-    } else {
-      console.log('📺 Nenhuma chamada ativa no momento');
-    }
     
     res.json(rows[0] || null);
   } catch (err) {
@@ -356,8 +371,8 @@ app.get('/api/visitas/ultima', async (req, res) => {
 
 /**
  * PUT /api/visitas/:id/chamar
- * RF003 - Chamar visitante
- * Muda status de 'aguardando' para 'chamado'
+ * RF003 - Chamada de Visitante
+ * Atualiza status para 'chamado' (em atendimento)
  */
 app.put('/api/visitas/:id/chamar', async (req, res) => {
   const { id } = req.params;
@@ -365,7 +380,7 @@ app.put('/api/visitas/:id/chamar', async (req, res) => {
   try {
     console.log(`Tentando chamar visita ID: ${id}`);
     
-    // Atualiza status para 'chamado' (em atendimento)
+    // Atualiza status para 'chamado'
     const [result] = await pool.query(
       `UPDATE visitas 
       SET status = 'chamado', hora_chamada = NOW()
@@ -379,6 +394,7 @@ app.put('/api/visitas/:id/chamar', async (req, res) => {
       return res.status(404).json({ error: 'Visita não encontrada ou já foi chamada' });
     }
 
+    // Busca a visita atualizada
     const [rows] = await pool.query(
       'SELECT * FROM visitas_completas WHERE visita_id = ?',
       [id]
@@ -388,7 +404,7 @@ app.put('/api/visitas/:id/chamar', async (req, res) => {
       return res.status(404).json({ error: 'Visita não encontrada após atualização' });
     }
 
-    console.log(`Visitante chamado: ${rows[0].visitante_nome} - Status: chamado`);
+    console.log(`Chamada realizada: ${rows[0].visitante_nome}`);
 
     res.json(rows[0]);
   } catch (err) {
@@ -399,8 +415,8 @@ app.put('/api/visitas/:id/chamar', async (req, res) => {
 
 /**
  * PUT /api/visitas/:id/finalizar
- * RF008 - Finalizar Atendimento
- * Muda status de 'chamado' para 'atendido'
+ * RF008 - Encerramento de Atendimento
+ * Finaliza o atendimento (chamado → finalizado)
  */
 app.put('/api/visitas/:id/finalizar', async (req, res) => {
   const { id } = req.params;
@@ -408,10 +424,10 @@ app.put('/api/visitas/:id/finalizar', async (req, res) => {
   try {
     console.log(`Tentando finalizar visita ID: ${id}`);
     
-    // Atualiza status para 'atendido' e define hora_saida
+    // Atualiza status para 'finalizado'
     const [result] = await pool.query(
       `UPDATE visitas 
-      SET status = 'atendido', hora_saida = NOW()
+      SET status = 'finalizado', hora_saida = NOW()
       WHERE id = ? AND status = 'chamado'`,
       [id]
     );
@@ -422,6 +438,7 @@ app.put('/api/visitas/:id/finalizar', async (req, res) => {
       return res.status(404).json({ error: 'Visita não encontrada ou não está em atendimento' });
     }
 
+    // Busca a visita atualizada
     const [rows] = await pool.query(
       'SELECT * FROM visitas_completas WHERE visita_id = ?',
       [id]
@@ -442,22 +459,18 @@ app.put('/api/visitas/:id/finalizar', async (req, res) => {
 
 /**
  * PUT /api/visitas/:id/rechamar
- * Rechamar visitante - volta de 'chamado' para 'aguardando'
- * Usado quando visitante não comparece após ser chamado
- * LIMPA hora_chamada para não aparecer no painel
+ * Rechamar visitante - volta do 'chamado' para 'aguardando'
  */
 app.put('/api/visitas/:id/rechamar', async (req, res) => {
   const { id } = req.params;
   
   try {
-    console.log(`🔄 Tentando rechamar visita ID: ${id}`);
+    console.log(`Tentando rechamar visita ID: ${id}`);
     
-    // Volta status para 'aguardando' e LIMPA hora_chamada
+    // Volta status para 'aguardando' e limpa hora_chamada
     const [result] = await pool.query(
       `UPDATE visitas 
-      SET status = 'aguardando', 
-          hora_chamada = NULL,
-          hora_saida = NULL
+      SET status = 'aguardando', hora_chamada = NULL
       WHERE id = ? AND status = 'chamado'`,
       [id]
     );
@@ -468,6 +481,7 @@ app.put('/api/visitas/:id/rechamar', async (req, res) => {
       return res.status(404).json({ error: 'Visita não encontrada ou não está em atendimento' });
     }
 
+    // Busca a visita atualizada
     const [rows] = await pool.query(
       'SELECT * FROM visitas_completas WHERE visita_id = ?',
       [id]
@@ -477,7 +491,7 @@ app.put('/api/visitas/:id/rechamar', async (req, res) => {
       return res.status(404).json({ error: 'Visita não encontrada após rechamada' });
     }
 
-    console.log(`✅ Visitante rechamado: ${rows[0].visitante_nome} - Voltou para aguardando (hora_chamada limpa)`);
+    console.log(`Visitante rechamado: ${rows[0].visitante_nome}`);
 
     res.json(rows[0]);
   } catch (err) {
@@ -488,12 +502,13 @@ app.put('/api/visitas/:id/rechamar', async (req, res) => {
 
 /**
  * DELETE /api/visitas/:id
- * RF010 - Cancelamento de Registros
+ * RF010 - Edição e Cancelamento de Registros
  */
 app.delete('/api/visitas/:id', async (req, res) => {
   const { id } = req.params;
   
   try {
+    // Verifica se a visita existe e não foi finalizada
     const [visita] = await pool.query(
       'SELECT status FROM visitas WHERE id = ?',
       [id]
@@ -503,9 +518,9 @@ app.delete('/api/visitas/:id', async (req, res) => {
       return res.status(404).json({ error: 'Visita não encontrada' });
     }
 
-    if (visita[0].status === 'atendido') {
+    if (visita[0].status === 'finalizado') {
       return res.status(400).json({ 
-        error: 'Não é possível cancelar visita já atendida' 
+        error: 'Não é possível cancelar visita já finalizada' 
       });
     }
 
@@ -521,8 +536,13 @@ app.delete('/api/visitas/:id', async (req, res) => {
 });
 
 // ============================================
-// USUÁRIOS - CRUD (COM BCRYPT)
+// USUÁRIOS - CRUD (Apenas Administradores)
 // ============================================
+
+/**
+ * GET /api/usuarios
+ * Lista todos os usuários
+ */
 app.get('/api/usuarios', async (req, res) => {
   try {
     const [rows] = await pool.query(`
@@ -539,8 +559,6 @@ app.get('/api/usuarios', async (req, res) => {
       LEFT JOIN departamentos d ON u.departamento_id = d.id
       ORDER BY u.created_at DESC
     `);
-    
-    // Nunca retornar senhas
     res.json(rows);
   } catch (err) {
     console.error('Erro ao listar usuários:', err);
@@ -548,21 +566,28 @@ app.get('/api/usuarios', async (req, res) => {
   }
 });
 
+/**
+ * POST /api/usuarios
+ * Criar novo usuário
+ */
 app.post('/api/usuarios', async (req, res) => {
   const { nome, login, senha, perfil, departamento_id } = req.body;
   
+  // Validação
   if (!nome || !login || !senha || !perfil) {
     return res.status(400).json({ 
       error: 'Nome, login, senha e perfil são obrigatórios' 
     });
   }
 
+  // Validar perfil
   const perfisValidos = ['recepcionista', 'departamento', 'painel', 'administrador'];
   if (!perfisValidos.includes(perfil)) {
     return res.status(400).json({ error: 'Perfil inválido' });
   }
 
   try {
+    // Verificar se login já existe
     const [existe] = await pool.query(
       'SELECT id FROM usuarios WHERE login = ?',
       [login]
@@ -572,15 +597,14 @@ app.post('/api/usuarios', async (req, res) => {
       return res.status(400).json({ error: 'Login já existe' });
     }
 
-    // Criptografar senha com bcrypt
-    const senhaHash = await bcrypt.hash(senha, 10);
-
+    // Criar usuário
     const [result] = await pool.query(
       `INSERT INTO usuarios (nome, login, senha, perfil, departamento_id, ativo) 
        VALUES (?, ?, ?, ?, ?, 1)`,
-      [nome, login, senhaHash, perfil, departamento_id || null]
+      [nome, login, senha, perfil, departamento_id || null]
     );
 
+    // Buscar usuário criado
     const [usuario] = await pool.query(
       `SELECT 
         u.id, u.nome, u.login, u.perfil, u.departamento_id,
@@ -591,7 +615,7 @@ app.post('/api/usuarios', async (req, res) => {
       [result.insertId]
     );
 
-    console.log(`✅ Novo usuário criado: ${nome} (${login})`);
+    console.log(`Novo usuário criado: ${nome} (${login})`);
 
     res.status(201).json(usuario[0]);
   } catch (err) {
@@ -600,11 +624,16 @@ app.post('/api/usuarios', async (req, res) => {
   }
 });
 
+/**
+ * PUT /api/usuarios/:id
+ * Atualizar usuário
+ */
 app.put('/api/usuarios/:id', async (req, res) => {
   const { id } = req.params;
   const { nome, login, senha, perfil, departamento_id, ativo } = req.body;
 
   try {
+    // Verificar se usuário existe
     const [usuarioExiste] = await pool.query(
       'SELECT id FROM usuarios WHERE id = ?',
       [id]
@@ -614,6 +643,7 @@ app.put('/api/usuarios/:id', async (req, res) => {
       return res.status(404).json({ error: 'Usuário não encontrado' });
     }
 
+    // Verificar se login já está em uso por outro usuário
     if (login) {
       const [loginEmUso] = await pool.query(
         'SELECT id FROM usuarios WHERE login = ? AND id != ?',
@@ -625,6 +655,7 @@ app.put('/api/usuarios/:id', async (req, res) => {
       }
     }
 
+    // Construir query de atualização dinamicamente
     const campos = [];
     const valores = [];
 
@@ -636,11 +667,9 @@ app.put('/api/usuarios/:id', async (req, res) => {
       campos.push('login = ?');
       valores.push(login);
     }
-    // Se senha foi fornecida, criptografar com bcrypt
     if (senha !== undefined && senha.trim() !== '') {
-      const senhaHash = await bcrypt.hash(senha, 10);
       campos.push('senha = ?');
-      valores.push(senhaHash);
+      valores.push(senha);
     }
     if (perfil !== undefined) {
       campos.push('perfil = ?');
@@ -666,6 +695,7 @@ app.put('/api/usuarios/:id', async (req, res) => {
       valores
     );
 
+    // Buscar usuário atualizado
     const [usuario] = await pool.query(
       `SELECT 
         u.id, u.nome, u.login, u.perfil, u.departamento_id,
@@ -676,7 +706,7 @@ app.put('/api/usuarios/:id', async (req, res) => {
       [id]
     );
 
-    console.log(`✅ Usuário atualizado: ${usuario[0].nome} (ID: ${id})`);
+    console.log(`Usuário atualizado: ${usuario[0].nome} (ID: ${id})`);
 
     res.json(usuario[0]);
   } catch (err) {
@@ -685,10 +715,15 @@ app.put('/api/usuarios/:id', async (req, res) => {
   }
 });
 
+/**
+ * DELETE /api/usuarios/:id
+ * Deletar usuário (soft delete - apenas desativa)
+ */
 app.delete('/api/usuarios/:id', async (req, res) => {
   const { id } = req.params;
 
   try {
+    // Verificar se não está tentando deletar o próprio usuário admin
     const [usuario] = await pool.query(
       'SELECT login FROM usuarios WHERE id = ?',
       [id]
@@ -704,6 +739,7 @@ app.delete('/api/usuarios/:id', async (req, res) => {
       });
     }
 
+    // Soft delete - apenas desativa
     await pool.query(
       'UPDATE usuarios SET ativo = 0 WHERE id = ?',
       [id]
@@ -721,6 +757,11 @@ app.delete('/api/usuarios/:id', async (req, res) => {
 // ============================================
 // DEPARTAMENTOS
 // ============================================
+
+/**
+ * GET /api/departamentos
+ * Lista todos os departamentos
+ */
 app.get('/api/departamentos', async (req, res) => {
   try {
     const [rows] = await pool.query('SELECT * FROM departamentos ORDER BY nome');
@@ -734,13 +775,18 @@ app.get('/api/departamentos', async (req, res) => {
 // ============================================
 // RELATÓRIOS - RF009
 // ============================================
+
+/**
+ * GET /api/relatorios/dia
+ * Estatísticas do dia atual
+ */
 app.get('/api/relatorios/dia', async (req, res) => {
   try {
     const [rows] = await pool.query(`
       SELECT 
         departamento_nome,
         COUNT(*) as total_visitas,
-        SUM(CASE WHEN status = 'atendido' THEN 1 ELSE 0 END) as atendidos,
+        SUM(CASE WHEN status = 'finalizado' THEN 1 ELSE 0 END) as finalizados,
         SUM(CASE WHEN status = 'chamado' THEN 1 ELSE 0 END) as chamados,
         SUM(CASE WHEN status = 'aguardando' THEN 1 ELSE 0 END) as aguardando
       FROM visitas_completas
@@ -754,6 +800,10 @@ app.get('/api/relatorios/dia', async (req, res) => {
   }
 });
 
+/**
+ * GET /api/relatorios/periodo
+ * Relatório por período
+ */
 app.get('/api/relatorios/periodo', async (req, res) => {
   const { data_inicio, data_fim } = req.query;
   
@@ -769,7 +819,7 @@ app.get('/api/relatorios/periodo', async (req, res) => {
         DATE(hora_chegada) as data,
         departamento_nome,
         COUNT(*) as total_visitas,
-        SUM(CASE WHEN status = 'atendido' THEN 1 ELSE 0 END) as atendidos
+        SUM(CASE WHEN status = 'finalizado' THEN 1 ELSE 0 END) as finalizados
       FROM visitas_completas
       WHERE DATE(hora_chegada) BETWEEN ? AND ?
       GROUP BY DATE(hora_chegada), departamento_id, departamento_nome
@@ -798,19 +848,15 @@ app.use((req, res) => {
 // ============================================
 app.listen(port, "0.0.0.0", async () => {
   console.log('================================================');
-  console.log('🚀 SISTEMA DE RECEPÇÃO EMPRESARIAL V2.0');
-  console.log('🔒 COM SEGURANÇA BCRYPT');
+  console.log('🚀 SISTEMA DE RECEPÇÃO EMPRESARIAL');
   console.log('================================================');
   console.log(`✅ Servidor rodando em http://192.167.2.41:${port}`);
   console.log(`⏰ Iniciado em: ${new Date().toLocaleString('pt-BR')}`);
   
+  // Testa conexão com banco
   try {
     await pool.query('SELECT 1');
     console.log('✅ Banco de dados conectado');
-    
-    // Migrar senhas automaticamente
-    await migrarSenhasParaHash();
-    
   } catch (err) {
     console.error('❌ Erro ao conectar ao banco:', err.message);
   }
@@ -818,26 +864,23 @@ app.listen(port, "0.0.0.0", async () => {
   console.log('================================================');
   console.log('📋 Endpoints disponíveis:');
   console.log('   GET  /api/status');
-  console.log('   POST /api/auth/login 🔒');
+  console.log('   POST /api/auth/login');
   console.log('   GET  /api/usuarios');
-  console.log('   POST /api/usuarios 🔒');
-  console.log('   PUT  /api/usuarios/:id 🔒');
+  console.log('   POST /api/usuarios');
+  console.log('   PUT  /api/usuarios/:id');
   console.log('   DELETE /api/usuarios/:id');
   console.log('   POST /api/visitas');
   console.log('   GET  /api/visitas');
+  console.log('   GET  /api/visitas/ultima');
   console.log('   GET  /api/visitas/aguardando/:departamento_id');
   console.log('   GET  /api/visitas/chamados/:departamento_id');
-  console.log('   GET  /api/visitas/ultima');
   console.log('   PUT  /api/visitas/:id/chamar');
-  console.log('   PUT  /api/visitas/:id/finalizar');
+  console.log('   PUT  /api/visitas/:id/finalizado');
   console.log('   PUT  /api/visitas/:id/rechamar');
   console.log('   DELETE /api/visitas/:id');
   console.log('   GET  /api/departamentos');
   console.log('   GET  /api/visitantes');
   console.log('   GET  /api/relatorios/dia');
   console.log('   GET  /api/relatorios/periodo');
-  console.log('================================================');
-  console.log('🎯 FLUXO: Aguardando → Chamado → Atendido');
-  console.log('🔒 Senhas protegidas com bcrypt (salt rounds: 10)');
   console.log('================================================');
 });

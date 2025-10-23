@@ -45,7 +45,7 @@ export default function PainelDepartamento({ usuario, onLogout }) {
   const buscarFinalizados = useCallback(async () => {
     try {
       const response = await fetch(
-        `http://192.167.2.41:3001/api/visitas?departamento_id=${usuario.departamento_id}&status=atendido`
+        `http://192.167.2.41:3001/api/visitas?departamento_id=${usuario.departamento_id}&status=finalizado`
       );
       const data = await response.json();
       
