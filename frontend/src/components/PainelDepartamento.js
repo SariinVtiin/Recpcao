@@ -49,9 +49,6 @@ export default function PainelDepartamento({ usuario, onLogout }) {
       );
       const data = await response.json();
       
-      console.log('Visitas finalizadas recebidas:', data); // Debug
-      
-      // Pegar data de hoje no formato YYYY-MM-DD
       const hoje = new Date();
       hoje.setHours(0, 0, 0, 0);
       
@@ -67,7 +64,6 @@ export default function PainelDepartamento({ usuario, onLogout }) {
           return new Date(b.hora_saida) - new Date(a.hora_saida);
         });
       
-      console.log('Visitas hoje filtradas:', visitasHoje); // Debug
       setVisitasFinalizadas(visitasHoje);
     } catch (error) {
       console.error('Erro:', error);
@@ -98,7 +94,11 @@ export default function PainelDepartamento({ usuario, onLogout }) {
     try {
       const response = await fetch(
         `http://192.167.2.41:3001/api/visitas/${visitaId}/chamar`,
-        { method: 'PUT' }
+        { 
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ usuario_id: usuario.id })
+        }
       );
 
       if (response.ok) {
@@ -122,7 +122,7 @@ export default function PainelDepartamento({ usuario, onLogout }) {
     setCarregando(true);
     try {
       const response = await fetch(
-        `http://192.167.2.41:3001/api/visitas/${visitaId}/finalizar`,
+        `http://192.167.2.41:3001/api/visitas/${visitaId}/finalizado`,
         { method: 'PUT' }
       );
 
@@ -132,31 +132,6 @@ export default function PainelDepartamento({ usuario, onLogout }) {
         setAbaAtiva('finalizados');
       } else {
         alert('Erro ao finalizar.');
-      }
-    } catch (error) {
-      console.error('Erro:', error);
-      alert('Erro de conexão.');
-    } finally {
-      setCarregando(false);
-    }
-  };
-
-  const rechamarVisitante = async (visitaId, nomeVisitante) => {
-    if (!window.confirm(`${nomeVisitante} não compareceu?\n\nDeseja devolver para a fila?`)) return;
-
-    setCarregando(true);
-    try {
-      const response = await fetch(
-        `http://192.167.2.41:3001/api/visitas/${visitaId}/rechamar`,
-        { method: 'PUT' }
-      );
-
-      if (response.ok) {
-        await buscarChamados();
-        await buscarAguardando();
-        setAbaAtiva('aguardando');
-      } else {
-        alert('Erro ao rechamar.');
       }
     } catch (error) {
       console.error('Erro:', error);
@@ -200,8 +175,8 @@ export default function PainelDepartamento({ usuario, onLogout }) {
                 <Building2 className="text-white" size={24} />
               </div>
               <div>
-                <h1 className="painel-dept-title">Painel Departamento</h1>
-                <p className="painel-dept-subtitle">{usuario.nome} • {usuario.departamento_nome}</p>
+                <h1 className="painel-dept-title">{usuario.departamento_nome || 'Painel Departamento'}</h1>
+                <p className="painel-dept-subtitle">{usuario.nome}</p>
               </div>
             </div>
             <button onClick={onLogout} className="painel-dept-btn-logout">
@@ -214,37 +189,44 @@ export default function PainelDepartamento({ usuario, onLogout }) {
           <div className="painel-dept-tabs">
             <button
               onClick={() => setAbaAtiva('aguardando')}
-              className={`painel-dept-tab aguardando ${abaAtiva === 'aguardando' ? 'active' : ''}`}
+              className={`painel-dept-tab ${abaAtiva === 'aguardando' ? 'active' : ''}`}
             >
               <Clock size={20} />
-              Aguardando ({visitasAguardando.length})
+              Aguardando
+              {visitasAguardando.length > 0 && (
+                <span className="painel-dept-badge-count">{visitasAguardando.length}</span>
+              )}
             </button>
-            
             <button
               onClick={() => setAbaAtiva('chamados')}
-              className={`painel-dept-tab chamados ${abaAtiva === 'chamados' ? 'active' : ''}`}
+              className={`painel-dept-tab ${abaAtiva === 'chamados' ? 'active' : ''}`}
             >
               <UserCheck size={20} />
-              Em Atendimento ({visitasChamados.length})
+              Em Atendimento
+              {visitasChamados.length > 0 && (
+                <span className="painel-dept-badge-count">{visitasChamados.length}</span>
+              )}
             </button>
-            
             <button
               onClick={() => setAbaAtiva('finalizados')}
-              className={`painel-dept-tab finalizados ${abaAtiva === 'finalizados' ? 'active' : ''}`}
+              className={`painel-dept-tab ${abaAtiva === 'finalizados' ? 'active' : ''}`}
             >
               <CheckCircle size={20} />
-              Finalizados ({visitasFinalizadas.length})
+              Finalizados
+              {visitasFinalizadas.length > 0 && (
+                <span className="painel-dept-badge-count">{visitasFinalizadas.length}</span>
+              )}
             </button>
           </div>
 
-          {/* Conteúdo */}
-          <div className="painel-dept-tab-content">
+          {/* Conteúdo das Abas */}
+          <div className="painel-dept-content-area">
             {/* ABA AGUARDANDO */}
             {abaAtiva === 'aguardando' && (
               <div>
                 <h2 className="painel-dept-section-title">
                   <Clock size={24} className="text-orange-600" />
-                  Visitantes Aguardando
+                  Fila de Espera
                 </h2>
 
                 {visitasAguardando.length === 0 ? (
@@ -269,10 +251,10 @@ export default function PainelDepartamento({ usuario, onLogout }) {
                               <span>{visita.motivo}</span>
                             </div>
                           )}
-                          {visita.observacao && (
+                          {visita.visitante_matricula && (
                             <div className="painel-dept-visita-obs">
-                              <span>ℹ️</span>
-                              <span>{visita.observacao}</span>
+                              <span>🎫</span>
+                              <span>Matrícula: {visita.visitante_matricula}</span>
                             </div>
                           )}
                           <div className="painel-dept-visita-horarios">
@@ -322,9 +304,9 @@ export default function PainelDepartamento({ usuario, onLogout }) {
                               📋 {visita.motivo}
                             </div>
                           )}
-                          {visita.observacao && (
+                          {visita.visitante_matricula && (
                             <div className="painel-dept-visita-obs">
-                              ℹ️ {visita.observacao}
+                              🎫 Matrícula: {visita.visitante_matricula}
                             </div>
                           )}
                           <div className="painel-dept-visita-horarios">
@@ -334,19 +316,11 @@ export default function PainelDepartamento({ usuario, onLogout }) {
                         </div>
                         <div className="painel-dept-actions">
                           <button
-                            onClick={() => rechamarVisitante(visita.visita_id, visita.visitante_nome)}
-                            disabled={carregando}
-                            className="painel-dept-btn rechamar"
-                            title="Devolver para fila"
-                          >
-                            🔄 Rechamar
-                          </button>
-                          <button
                             onClick={() => finalizarAtendimento(visita.visita_id, visita.visitante_nome)}
                             disabled={carregando}
                             className="painel-dept-btn finalizar"
                           >
-                            ✅ Finalizar
+                            ✅ Finalizar Atendimento
                           </button>
                         </div>
                       </div>
@@ -383,6 +357,11 @@ export default function PainelDepartamento({ usuario, onLogout }) {
                           {visita.motivo && (
                             <div className="painel-dept-visita-motivo">
                               📋 {visita.motivo}
+                            </div>
+                          )}
+                          {visita.visitante_matricula && (
+                            <div className="painel-dept-visita-obs">
+                              🎫 Matrícula: {visita.visitante_matricula}
                             </div>
                           )}
                           <div className="painel-dept-detalhes">

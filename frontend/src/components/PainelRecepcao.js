@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { User, Building2, LogOut, Send } from 'lucide-react';
+import { User, Building2, LogOut, Send, IdCard } from 'lucide-react';
 import './PainelRecepcao.css';
 
 export default function PainelRecepcao({ usuario, onLogout }) {
   const [nome, setNome] = useState('');
   const [cpf, setCpf] = useState('');
   const [motivo, setMotivo] = useState('');
-  const [observacao, setObservacao] = useState('');
-  const [departamentoId, setDepartamentoId] = useState(1);
+  const [matricula, setMatricula] = useState('');
+  const [departamentoId, setDepartamentoId] = useState(2);
   const [mensagem, setMensagem] = useState('');
   const [carregando, setCarregando] = useState(false);
   const [estatisticas, setEstatisticas] = useState(null);
@@ -46,7 +46,7 @@ export default function PainelRecepcao({ usuario, onLogout }) {
           cpf: cpf.replace(/\D/g, ''),
           departamento_id: departamentoId,
           motivo: motivo.trim(),
-          observacao: observacao.trim(),
+          observacao: matricula.trim(), // Envia matrícula como observação no backend
           usuario_id: usuario.id
         }),
       });
@@ -57,7 +57,7 @@ export default function PainelRecepcao({ usuario, onLogout }) {
         setNome('');
         setCpf('');
         setMotivo('');
-        setObservacao('');
+        setMatricula('');
         buscarEstatisticas();
         setTimeout(() => setMensagem(''), 3000);
       } else {
@@ -167,6 +167,22 @@ export default function PainelRecepcao({ usuario, onLogout }) {
               />
             </div>
 
+            {/* Matrícula */}
+            <div className="painel-recepcao-form-group">
+              <label className="painel-recepcao-label">
+                <IdCard size={18} className="painel-recepcao-label-icon" />
+                Matrícula (opcional)
+              </label>
+              <input
+                type="text"
+                value={matricula}
+                onChange={(e) => setMatricula(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder="Digite a matrícula"
+                className="painel-recepcao-input"
+              />
+            </div>
+
             {/* CPF */}
             <div className="painel-recepcao-form-group">
               <label className="painel-recepcao-label">
@@ -199,21 +215,6 @@ export default function PainelRecepcao({ usuario, onLogout }) {
               />
             </div>
 
-            {/* Observação */}
-            <div className="painel-recepcao-form-group">
-              <label className="painel-recepcao-label">
-                Observação (opcional)
-              </label>
-              <input
-                type="text"
-                value={observacao}
-                onChange={(e) => setObservacao(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Ex: Levar pasta azul"
-                className="painel-recepcao-input"
-              />
-            </div>
-
             {/* Departamento */}
             <div className="painel-recepcao-form-group">
               <label className="painel-recepcao-label">
@@ -222,16 +223,16 @@ export default function PainelRecepcao({ usuario, onLogout }) {
               </label>
               <div className="painel-recepcao-dept-grid">
                 <button
-                  onClick={() => setDepartamentoId(1)}
-                  className={`painel-recepcao-dept-btn operacional ${departamentoId === 1 ? 'active' : ''}`}
+                  onClick={() => setDepartamentoId(2)}
+                  className={`painel-recepcao-dept-btn operacional ${departamentoId === 2 ? 'active' : ''}`}
                 >
                   <div className="painel-recepcao-dept-name">Operacional</div>
                   <div className="painel-recepcao-dept-location">Sala 1</div>
                 </button>
                 
                 <button
-                  onClick={() => setDepartamentoId(2)}
-                  className={`painel-recepcao-dept-btn pessoal ${departamentoId === 2 ? 'active' : ''}`}
+                  onClick={() => setDepartamentoId(3)}
+                  className={`painel-recepcao-dept-btn pessoal ${departamentoId === 3 ? 'active' : ''}`}
                 >
                   <div className="painel-recepcao-dept-name">Pessoal</div>
                   <div className="painel-recepcao-dept-location">Sala 2</div>

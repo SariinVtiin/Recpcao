@@ -337,7 +337,7 @@ export default function PainelAdmin({ usuario, onLogout }) {
                         className="painel-admin-btn-delete"
                       >
                         <Trash2 size={16} className="mr-1" />
-                        Desativar
+                        Excluir
                       </button>
                     )}
                   </div>
