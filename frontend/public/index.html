@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="%PUBLIC_URL%/confederal2.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#667eea" />
+    <meta name="description" content="Sistema de Recepção Empresarial" />
+    <!--<link rel="apple-touch-icon" href="%PUBLIC_URL%/maxima-bg4.png" />-->
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    
+    <title>Sistema de Recepção</title>
+    
+    <!-- 🎨 TAILWIND CSS CDN - ESSENCIAL! -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- ⚙️ Configuração do Tailwind -->
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              primary: '#667eea',
+              secondary: '#764ba2',
+            },
+            animation: {
+              'fade-in': 'fadeIn 0.5s ease-out',
+              'slide-in': 'slideIn 0.3s ease-out',
+            },
+            keyframes: {
+              fadeIn: {
+                '0%': { opacity: '0', transform: 'translateY(10px)' },
+                '100%': { opacity: '1', transform: 'translateY(0)' },
+              },
+              slideIn: {
+                '0%': { opacity: '0', transform: 'translateX(-20px)' },
+                '100%': { opacity: '1', transform: 'translateX(0)' },
+              },
+            },
+          }
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <noscript>Você precisa habilitar JavaScript para executar este aplicativo.</noscript>
+    <div id="root"></div>
+  </body>
+</html>
