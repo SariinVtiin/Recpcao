@@ -674,6 +674,7 @@ app.put('/api/usuarios/:id', async (req, res) => {
   }
 });
 
+// DESATIVAR USUÁRIO (soft delete)
 app.delete('/api/usuarios/:id', async (req, res) => {
   const { id } = req.params;
 
@@ -698,12 +699,118 @@ app.delete('/api/usuarios/:id', async (req, res) => {
       [id]
     );
 
-    console.log(`Usuário desativado: ${usuario[0].login} (ID: ${id})`);
+    console.log(`✅ Usuário desativado: ${usuario[0].login} (ID: ${id})`);
 
     res.json({ message: 'Usuário desativado com sucesso' });
   } catch (err) {
     console.error('Erro ao deletar usuário:', err);
     res.status(500).json({ error: 'Erro ao deletar usuário' });
+  }
+});
+
+// REATIVAR USUÁRIO - NOVA ROTA
+app.put('/api/usuarios/:id/reativar', async (req, res) => {
+  const { id } = req.params;
+
+  console.log(`🔄 Tentando reativar usuário ID: ${id}`);
+
+  try {
+    const [usuario] = await pool.query(
+      'SELECT id, nome, login, ativo FROM usuarios WHERE id = ?',
+      [id]
+    );
+
+    if (usuario.length === 0) {
+      console.log(`❌ Usuário ID ${id} não encontrado`);
+      return res.status(404).json({ error: 'Usuário não encontrado' });
+    }
+
+    if (usuario[0].ativo === 1) {
+      console.log(`⚠️ Usuário ${usuario[0].nome} já está ativo`);
+      return res.status(400).json({ error: 'Usuário já está ativo' });
+    }
+
+    await pool.query(
+      'UPDATE usuarios SET ativo = 1 WHERE id = ?',
+      [id]
+    );
+
+    const [usuarioAtualizado] = await pool.query(
+      `SELECT 
+        u.id, u.nome, u.login, u.perfil, u.departamento_id,
+        d.nome as departamento_nome, u.ativo
+       FROM usuarios u
+       LEFT JOIN departamentos d ON u.departamento_id = d.id
+       WHERE u.id = ?`,
+      [id]
+    );
+
+    console.log(`✅ Usuário reativado: ${usuarioAtualizado[0].nome} (${usuarioAtualizado[0].login})`);
+
+    res.json(usuarioAtualizado[0]);
+  } catch (err) {
+    console.error('❌ Erro ao reativar usuário:', err);
+    res.status(500).json({ error: 'Erro ao reativar usuário' });
+  }
+});
+
+// EXCLUIR PERMANENTEMENTE - NOVA ROTA
+app.delete('/api/usuarios/:id/excluir-permanente', async (req, res) => {
+  const { id } = req.params;
+
+  console.log(`🗑️ Tentando excluir permanentemente usuário ID: ${id}`);
+
+  try {
+    const [usuario] = await pool.query(
+      'SELECT id, nome, login, ativo FROM usuarios WHERE id = ?',
+      [id]
+    );
+
+    if (usuario.length === 0) {
+      console.log(`❌ Usuário ID ${id} não encontrado`);
+      return res.status(404).json({ error: 'Usuário não encontrado' });
+    }
+
+    if (usuario[0].login === 'admin') {
+      console.log(`❌ Tentativa de excluir usuário admin`);
+      return res.status(400).json({ 
+        error: 'Não é possível excluir o usuário administrador principal' 
+      });
+    }
+
+    if (usuario[0].ativo === 1) {
+      console.log(`❌ Usuário ${usuario[0].nome} ainda está ativo`);
+      return res.status(400).json({ 
+        error: 'Só é possível excluir permanentemente usuários desativados. Desative o usuário primeiro.' 
+      });
+    }
+
+    // Verificar se o usuário tem visitas registradas
+    const [visitasRegistradas] = await pool.query(
+      'SELECT COUNT(*) as total FROM visitas WHERE usuario_id = ?',
+      [id]
+    );
+
+    if (visitasRegistradas[0].total > 0) {
+      // Se tem visitas, apenas marcar como excluído mas manter no banco para integridade referencial
+      await pool.query(
+        'UPDATE usuarios SET ativo = -1, login = CONCAT(login, "_DELETED_", ?) WHERE id = ?',
+        [Date.now(), id]
+      );
+      console.log(`⚠️ Usuário ${usuario[0].nome} marcado como excluído (tinha ${visitasRegistradas[0].total} visitas registradas)`);
+    } else {
+      // Se não tem visitas, pode excluir do banco
+      await pool.query('DELETE FROM usuarios WHERE id = ?', [id]);
+      console.log(`✅ Usuário ${usuario[0].nome} excluído permanentemente do banco de dados`);
+    }
+
+    res.json({ 
+      message: 'Usuário excluído permanentemente',
+      usuario: usuario[0].nome
+    });
+  } catch (err) {
+    console.error('❌ Erro ao excluir usuário permanentemente:', err);
+    res.status(500).json({ error: 'Erro ao excluir usuário' });
   }
 });
 
@@ -997,7 +1104,7 @@ function iniciarServidor() {
       console.log('🚀 SISTEMA DE RECEPÇÃO EMPRESARIAL');
       console.log('   VERSÃO HTTPS ATIVADA 🔒');
       console.log('================================================');
-      console.log(`✅ Servidor HTTPS rodando em https://192.167.2.41:${port}`);
+      console.log(`✅ Servidor HTTPS rodando em https://192.167.0.116:${port}`);
       console.log(`⏰ Iniciado em: ${new Date().toLocaleString('pt-BR')}`);
       
       try {
@@ -1021,7 +1128,7 @@ function iniciarServidor() {
       console.log('🚀 SISTEMA DE RECEPÇÃO EMPRESARIAL');
       console.log('   VERSÃO HTTP (NÃO SEGURO)');
       console.log('================================================');
-      console.log(`✅ Servidor HTTP rodando em http://192.167.2.41:${port}`);
+      console.log(`✅ Servidor HTTP rodando em http://192.167.0.116:${port}`);
       console.log(`⏰ Iniciado em: ${new Date().toLocaleString('pt-BR')}`);
       
       try {

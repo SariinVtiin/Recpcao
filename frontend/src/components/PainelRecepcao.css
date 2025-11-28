@@ -15,6 +15,7 @@
 .painel-recepcao-background {
   position: absolute;
   inset: 0;
+  background-image: url('C:\Users\jonathan01062\Documents\CODE\Nova pasta\Nova pasta\Recpcao\frontend\src\assets\confederal.png');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -236,6 +237,82 @@
 }
 
 /* ============================================
+   ATENDIMENTO PREFERENCIAL
+   ============================================ */
+
+.painel-recepcao-preferencial-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.painel-recepcao-preferencial-toggle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  background: #f8fafc;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 100%;
+  font-size: 15px;
+  font-weight: 500;
+  color: #475569;
+}
+
+.painel-recepcao-preferencial-toggle:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.painel-recepcao-preferencial-toggle.active {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border-color: #fbbf24;
+  color: #92400e;
+}
+
+.painel-recepcao-preferencial-toggle.active:hover {
+  background: linear-gradient(135deg, #fde68a 0%, #fcd34d 100%);
+}
+
+.painel-recepcao-preferencial-switch {
+  position: relative;
+  width: 48px;
+  height: 26px;
+  background: #cbd5e1;
+  border-radius: 13px;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+}
+
+.painel-recepcao-preferencial-toggle.active .painel-recepcao-preferencial-switch {
+  background: #f59e0b;
+}
+
+.painel-recepcao-preferencial-slider {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  background: white;
+  border-radius: 50%;
+  transition: transform 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.painel-recepcao-preferencial-toggle.active .painel-recepcao-preferencial-slider {
+  transform: translateX(22px);
+}
+
+.painel-recepcao-preferencial-text {
+  font-weight: 600;
+  flex: 1;
+}
+
+/* ============================================
    SELEÇÃO DE DEPARTAMENTO
    ============================================ */
 
@@ -394,6 +471,7 @@
 .painel-recepcao-form-group:nth-child(3) { animation-delay: 0.15s; }
 .painel-recepcao-form-group:nth-child(4) { animation-delay: 0.2s; }
 .painel-recepcao-form-group:nth-child(5) { animation-delay: 0.25s; }
+.painel-recepcao-form-group:nth-child(6) { animation-delay: 0.3s; }
 
 /* ============================================
    ESTADOS DE FOCO E INTERAÇÃO
@@ -433,6 +511,25 @@
 
   .painel-recepcao-dept-grid {
     grid-template-columns: 1fr;
+  }
+
+  .painel-recepcao-preferencial-toggle {
+    padding: 12px 14px;
+    font-size: 14px;
+  }
+  
+  .painel-recepcao-preferencial-switch {
+    width: 42px;
+    height: 24px;
+  }
+  
+  .painel-recepcao-preferencial-slider {
+    width: 18px;
+    height: 18px;
+  }
+  
+  .painel-recepcao-preferencial-toggle.active .painel-recepcao-preferencial-slider {
+    transform: translateX(18px);
   }
 
   .painel-recepcao-title {

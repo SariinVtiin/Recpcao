@@ -22,7 +22,7 @@
   bottom: 0;
   width: 100vw;
   height: 100vh;
-  /*background-image: url('/confederal.png');*/
+  background-image: url('C:\Users\jonathan01062\Documents\CODE\Nova pasta\Nova pasta\Recpcao\frontend\src\assets\confederal.png');
   background-size: cover;
   background-position: center center;
   background-repeat: no-repeat;
@@ -104,14 +104,14 @@
   margin: 0;
 }
 
-/* Header Actions - NOVO */
+/* Header Actions */
 .painel-admin-header-actions {
   display: flex;
   gap: 0.75rem;
   align-items: center;
 }
 
-/* Botão Relatórios - NOVO */
+/* Botão Relatórios */
 .painel-admin-btn-relatorios {
   display: flex;
   align-items: center;
@@ -149,6 +149,49 @@
 
 .painel-admin-btn-logout:hover {
   background: #fee2e2;
+}
+
+/* ============================================
+   FILTROS DE VISUALIZAÇÃO - NOVO
+   ============================================ */
+
+.painel-admin-filters {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: #f8fafc;
+  border-radius: 0.75rem;
+  border: 2px solid #e2e8f0;
+}
+
+.painel-admin-filter-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: white;
+  color: #64748b;
+  border: 2px solid #e2e8f0;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.875rem;
+}
+
+.painel-admin-filter-btn.active {
+  background: #9333ea;
+  color: white;
+  border-color: #9333ea;
+  box-shadow: 0 4px 6px -1px rgba(147, 51, 234, 0.3);
+}
+
+.painel-admin-filter-btn:hover:not(.active) {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
 }
 
 /* ============================================
@@ -346,6 +389,88 @@
 }
 
 /* ============================================
+   BARRA DE PESQUISA
+   ============================================ */
+
+.painel-admin-search-container {
+  margin: 1.5rem 0;
+}
+
+.painel-admin-search-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.painel-admin-search-icon {
+  position: absolute;
+  left: 1rem;
+  color: #94a3b8;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.painel-admin-search-input {
+  width: 100%;
+  padding: 0.875rem 3rem 0.875rem 3rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 0.75rem;
+  font-size: 0.9375rem;
+  transition: all 0.2s ease;
+  background: white;
+  color: #1e293b;
+}
+
+.painel-admin-search-input:focus {
+  outline: none;
+  border-color: #9333ea;
+  box-shadow: 0 0 0 3px rgba(147, 51, 234, 0.1);
+}
+
+.painel-admin-search-input::placeholder {
+  color: #94a3b8;
+}
+
+.painel-admin-search-clear {
+  position: absolute;
+  right: 0.75rem;
+  background: #f1f5f9;
+  border: none;
+  border-radius: 0.5rem;
+  padding: 0.375rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  transition: all 0.2s ease;
+  z-index: 2;
+}
+
+.painel-admin-search-clear:hover {
+  background: #e2e8f0;
+  color: #1e293b;
+}
+
+.painel-admin-btn-clear-search {
+  margin-top: 1rem;
+  padding: 0.625rem 1.25rem;
+  background: #9333ea;
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.painel-admin-btn-clear-search:hover {
+  background: #7e22ce;
+  transform: translateY(-1px);
+}
+
+/* ============================================
    LISTA DE USUÁRIOS
    ============================================ */
 
@@ -373,9 +498,19 @@
   transition: all 0.2s;
 }
 
+.painel-admin-user-card.inactive {
+  background: #fef2f2;
+  border-left-color: #dc2626;
+  opacity: 0.85;
+}
+
 .painel-admin-user-card:hover {
   background: #f3f4f6;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.painel-admin-user-card.inactive:hover {
+  background: #fee2e2;
 }
 
 .painel-admin-user-info {
@@ -398,6 +533,11 @@
   font-weight: 600;
   color: #1f2937;
   margin: 0;
+}
+
+.painel-admin-user-card.inactive .painel-admin-user-name {
+  text-decoration: line-through;
+  color: #6b7280;
 }
 
 .painel-admin-user-details {
@@ -441,6 +581,11 @@
   color: #475569;
 }
 
+.painel-admin-badge.inactive {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
 .painel-admin-user-date {
   font-size: 0.75rem;
   color: #9ca3af;
@@ -452,7 +597,9 @@
 }
 
 .painel-admin-btn-edit,
-.painel-admin-btn-delete {
+.painel-admin-btn-delete,
+.painel-admin-btn-reactivate,
+.painel-admin-btn-permanent-delete {
   display: flex;
   align-items: center;
   gap: 0.25rem;
@@ -481,6 +628,25 @@
 
 .painel-admin-btn-delete:hover {
   background: #fecaca;
+}
+
+.painel-admin-btn-reactivate {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.painel-admin-btn-reactivate:hover {
+  background: #a7f3d0;
+}
+
+.painel-admin-btn-permanent-delete {
+  background: #7f1d1d;
+  color: white;
+}
+
+.painel-admin-btn-permanent-delete:hover {
+  background: #991b1b;
+  transform: translateY(-1px);
 }
 
 /* ============================================
@@ -538,7 +704,6 @@
     width: 100%;
   }
 
-  /* Header Actions Responsivo - NOVO */
   .painel-admin-header-actions {
     width: 100%;
     flex-direction: column;
@@ -550,12 +715,29 @@
     justify-content: center;
   }
 
+  .painel-admin-filters {
+    flex-direction: column;
+  }
+
   .painel-admin-form-grid {
     grid-template-columns: 1fr;
   }
 
   .painel-admin-form-group.full-width {
     grid-column: span 1;
+  }
+
+  .painel-admin-search-input {
+    font-size: 0.875rem;
+    padding: 0.75rem 2.75rem 0.75rem 2.75rem;
+  }
+  
+  .painel-admin-search-icon {
+    left: 0.875rem;
+  }
+  
+  .painel-admin-search-clear {
+    right: 0.625rem;
   }
 
   .painel-admin-user-card {
@@ -566,12 +748,15 @@
 
   .painel-admin-user-actions {
     width: 100%;
-    justify-content: stretch;
+    flex-wrap: wrap;
   }
 
   .painel-admin-btn-edit,
-  .painel-admin-btn-delete {
+  .painel-admin-btn-delete,
+  .painel-admin-btn-reactivate,
+  .painel-admin-btn-permanent-delete {
     flex: 1;
+    min-width: calc(50% - 0.25rem);
   }
 }
 
@@ -586,6 +771,21 @@
     font-size: 0.875rem;
     padding: 0.625rem 1rem;
   }
+
+  .painel-admin-search-input {
+    font-size: 0.8125rem;
+  }
+
+  .painel-admin-user-actions {
+    flex-direction: column;
+  }
+
+  .painel-admin-btn-edit,
+  .painel-admin-btn-delete,
+  .painel-admin-btn-reactivate,
+  .painel-admin-btn-permanent-delete {
+    width: 100%;
+  }
 }
 
 /* ============================================
@@ -598,9 +798,211 @@
 .painel-admin-btn-save:focus,
 .painel-admin-btn-cancel:focus,
 .painel-admin-btn-edit:focus,
-.painel-admin-btn-delete:focus {
+.painel-admin-btn-delete:focus,
+.painel-admin-btn-reactivate:focus,
+.painel-admin-btn-permanent-delete:focus,
+.painel-admin-search-input:focus,
+.painel-admin-search-clear:focus,
+.painel-admin-btn-clear-search:focus,
+.painel-admin-filter-btn:focus {
   outline: 3px solid #3b82f6;
   outline-offset: 2px;
+}
+
+/* ============================================
+   MODAL DE CONFIRMAÇÃO - NOVO
+   ============================================ */
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.modal-container {
+  background: white;
+  border-radius: 1rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  max-width: 500px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.modal-header {
+  padding: 2rem 2rem 1.5rem;
+  text-align: center;
+  border-bottom: 2px solid #f1f5f9;
+}
+
+.modal-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 4rem;
+  height: 4rem;
+  border-radius: 50%;
+  margin-bottom: 1rem;
+}
+
+.modal-icon-danger {
+  color: #dc2626;
+  background: #fee2e2;
+  padding: 1rem;
+  border-radius: 50%;
+}
+
+.modal-icon-warning {
+  color: #f59e0b;
+  background: #fef3c7;
+  padding: 1rem;
+  border-radius: 50%;
+}
+
+.modal-icon-success {
+  color: #059669;
+  background: #d1fae5;
+  padding: 1rem;
+  border-radius: 50%;
+}
+
+.modal-titulo {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0;
+}
+
+.modal-body {
+  padding: 1.5rem 2rem;
+}
+
+.modal-mensagem {
+  font-size: 1rem;
+  color: #4b5563;
+  line-height: 1.6;
+  margin: 0 0 1.5rem 0;
+  white-space: pre-line;
+}
+
+.modal-usuario-destaque {
+  background: #f3f4f6;
+  border-left: 4px solid #9333ea;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  margin: 1rem 0;
+  text-align: center;
+}
+
+.modal-usuario-destaque strong {
+  font-size: 1.125rem;
+  color: #1f2937;
+}
+
+.modal-input-container {
+  margin-top: 1.5rem;
+}
+
+.modal-input-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 0.75rem;
+}
+
+.modal-input-label strong {
+  color: #dc2626;
+}
+
+.modal-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 2px solid #d1d5db;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  transition: all 0.2s;
+  font-family: monospace;
+  text-align: center;
+  font-weight: 600;
+}
+
+.modal-input:focus {
+  outline: none;
+  border-color: #9333ea;
+  box-shadow: 0 0 0 3px rgba(147, 51, 234, 0.1);
+}
+
+.modal-footer {
+  padding: 1.5rem 2rem 2rem;
+  display: flex;
+  gap: 1rem;
+  border-top: 2px solid #f1f5f9;
+}
+
+.modal-btn {
+  flex: 1;
+  padding: 0.875rem 1.5rem;
+  border: none;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.modal-btn-cancelar {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.modal-btn-cancelar:hover {
+  background: #e5e7eb;
+}
+
+.modal-btn-confirmar {
+  background: #9333ea;
+  color: white;
+}
+
+.modal-btn-confirmar:hover {
+  background: #7e22ce;
+  transform: translateY(-1px);
+}
+
+.modal-btn-danger {
+  background: #dc2626;
+  color: white;
+}
+
+.modal-btn-danger:hover {
+  background: #b91c1c;
+  transform: translateY(-1px);
 }
 
 /* ============================================

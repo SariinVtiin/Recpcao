@@ -1,6 +1,7 @@
 /* ============================================
-   PAINEL RELATÓRIO - ESTILOS
+   PAINEL RELATÓRIO - ESTILOS OTIMIZADOS
    Sistema de Recepção Empresarial
+   Versão compacta - SEM scroll horizontal
    ============================================ */
 
 /* Container Principal */
@@ -10,7 +11,7 @@
   position: relative;
   overflow-x: hidden;
   overflow-y: auto;
-  padding: 2rem;
+  padding: 1.5rem; /* ← REDUZIDO de 2rem */
 }
 
 /* Fundo com Imagem */
@@ -22,6 +23,7 @@
   bottom: 0;
   width: 100vw;
   height: 100vh;
+  background-image: url('C:\Users\jonathan01062\Documents\CODE\Nova pasta\Nova pasta\Recpcao\frontend\src\assets\confederal.png');
   background-position: center center;
   background-repeat: no-repeat;
   background-size: cover;
@@ -46,8 +48,9 @@
 .relatorio-content {
   position: relative;
   z-index: 10;
-  max-width: 1400px;
+  max-width: 100%; /* ← ALTERADO de 1400px */
   margin: 0 auto;
+  padding: 0 0.5rem; /* ← ADICIONADO */
 }
 
 /* Card Principal */
@@ -57,9 +60,10 @@
   -webkit-backdrop-filter: blur(10px);
   border-radius: 1rem;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-  padding: 2rem;
+  padding: 1.5rem; /* ← REDUZIDO de 2rem */
   border: 2px solid rgba(255, 255, 255, 0.2);
   animation: fadeIn 0.3s ease-out;
+  overflow: hidden;
 }
 
 /* ============================================
@@ -70,37 +74,37 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2rem;
-  padding-bottom: 1.5rem;
+  margin-bottom: 1.5rem; /* ← REDUZIDO de 2rem */
+  padding-bottom: 1rem; /* ← REDUZIDO de 1.5rem */
   border-bottom: 2px solid #f1f5f9;
 }
 
 .header-left {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.75rem; /* ← REDUZIDO de 1rem */
 }
 
 .header-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 3rem;
-  height: 3rem;
+  width: 2.5rem; /* ← REDUZIDO de 3rem */
+  height: 2.5rem;
   background: linear-gradient(135deg, #2563eb, #1d4ed8);
-  border-radius: 12px;
+  border-radius: 10px;
   color: white;
 }
 
 .header-info h1 {
-  font-size: 1.75rem;
+  font-size: 1.5rem; /* ← REDUZIDO de 1.75rem */
   font-weight: 700;
   color: #1f2937;
   margin: 0;
 }
 
 .header-info p {
-  font-size: 0.875rem;
+  font-size: 0.8rem; /* ← REDUZIDO de 0.875rem */
   color: #6b7280;
   margin: 0;
 }
@@ -109,12 +113,13 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
+  padding: 0.6rem 1.2rem; /* ← REDUZIDO */
   background: #f3f4f6;
   color: #374151;
   border: none;
   border-radius: 0.5rem;
   font-weight: 600;
+  font-size: 0.875rem; /* ← ADICIONADO */
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -128,12 +133,13 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
+  padding: 0.6rem 1.2rem;
   background: linear-gradient(135deg, #10b981, #059669);
   color: white;
   border: none;
   border-radius: 0.5rem;
   font-weight: 600;
+  font-size: 0.875rem;
   cursor: pointer;
   transition: all 0.2s;
   box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
@@ -156,7 +162,7 @@
 }
 
 .btn-limpar-filtros {
-  padding: 0.75rem 1.25rem;
+  padding: 0.6rem 1rem; /* ← REDUZIDO */
   background: linear-gradient(135deg, #ef4444, #dc2626);
   color: white;
   border: 2px solid transparent;
@@ -164,7 +170,7 @@
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
-  font-size: 0.9rem;
+  font-size: 0.85rem; /* ← REDUZIDO */
   box-shadow: 0 2px 4px rgba(239, 68, 68, 0.2);
 }
 
@@ -184,13 +190,13 @@
 
 .filtros-rapidos {
   display: flex;
-  gap: 0.75rem;
+  gap: 0.5rem; /* ← REDUZIDO de 0.75rem */
   flex-wrap: wrap;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem; /* ← REDUZIDO de 1.5rem */
 }
 
 .filtro-btn {
-  padding: 0.75rem 1.25rem;
+  padding: 0.6rem 1rem; /* ← REDUZIDO */
   background: #f9fafb;
   color: #374151;
   border: 2px solid #e5e7eb;
@@ -198,7 +204,7 @@
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
-  font-size: 0.9rem;
+  font-size: 0.85rem; /* ← REDUZIDO */
 }
 
 .filtro-btn:hover {
@@ -215,12 +221,13 @@
 }
 
 .btn-filtros-avancados {
-  padding: 0.75rem 1.25rem;
+  padding: 0.6rem 1rem;
   background: white;
   color: #2563eb;
   border: 2px solid #2563eb;
   border-radius: 0.5rem;
   font-weight: 600;
+  font-size: 0.85rem;
   cursor: pointer;
   transition: all 0.2s;
   display: flex;
@@ -245,11 +252,11 @@
   background: #f9fafb;
   border: 2px solid #e5e7eb;
   border-radius: 0.75rem;
-  padding: 1.5rem;
-  margin-bottom: 1.5rem;
+  padding: 1rem; /* ← REDUZIDO de 1.5rem */
+  margin-bottom: 1rem; /* ← REDUZIDO de 1.5rem */
   animation: slideDown 0.3s ease-out;
   display: flex;
-  gap: 1rem;
+  gap: 0.75rem; /* ← REDUZIDO de 1rem */
   flex-wrap: wrap;
   align-items: flex-end;
 }
@@ -268,23 +275,23 @@
 .filtro-item {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  min-width: 200px;
+  gap: 0.4rem; /* ← REDUZIDO */
+  min-width: 150px; /* ← REDUZIDO de 200px */
   flex: 1;
 }
 
 .filtro-item label {
-  font-size: 0.875rem;
+  font-size: 0.8rem; /* ← REDUZIDO */
   font-weight: 600;
   color: #374151;
 }
 
 .filtro-item input,
 .filtro-item select {
-  padding: 0.75rem;
+  padding: 0.6rem; /* ← REDUZIDO */
   border: 2px solid #e5e7eb;
   border-radius: 0.5rem;
-  font-size: 0.875rem;
+  font-size: 0.8rem; /* ← REDUZIDO */
   background: white;
   transition: all 0.2s;
 }
@@ -297,12 +304,13 @@
 }
 
 .btn-aplicar-filtros {
-  padding: 0.75rem 1.5rem;
+  padding: 0.6rem 1.2rem; /* ← REDUZIDO */
   background: linear-gradient(135deg, #059669, #047857);
   color: white;
   border: none;
   border-radius: 0.5rem;
   font-weight: 600;
+  font-size: 0.85rem; /* ← ADICIONADO */
   cursor: pointer;
   transition: all 0.2s;
   display: flex;
@@ -322,16 +330,16 @@
 
 .cards-estatisticas {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1rem;
-  margin-bottom: 2rem;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); /* ← REDUZIDO de 200px */
+  gap: 0.75rem; /* ← REDUZIDO de 1rem */
+  margin-bottom: 1.5rem; /* ← REDUZIDO de 2rem */
 }
 
 .card-stat {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  padding: 1.5rem;
+  gap: 0.75rem; /* ← REDUZIDO de 1rem */
+  padding: 1rem; /* ← REDUZIDO de 1.5rem */
   border-radius: 0.75rem;
   border: 2px solid;
   transition: all 0.2s;
@@ -376,11 +384,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 3rem;
-  height: 3rem;
-  border-radius: 12px;
+  width: 2.5rem; /* ← REDUZIDO de 3rem */
+  height: 2.5rem;
+  border-radius: 10px;
   background: rgba(255, 255, 255, 0.8);
-  font-size: 1.5rem;
+  font-size: 1.25rem; /* ← REDUZIDO de 1.5rem */
 }
 
 .card-content {
@@ -388,7 +396,7 @@
 }
 
 .card-content h3 {
-  font-size: 2rem;
+  font-size: 1.5rem; /* ← REDUZIDO de 2rem */
   font-weight: 700;
   color: #111827;
   line-height: 1;
@@ -396,7 +404,7 @@
 }
 
 .card-content p {
-  font-size: 0.875rem;
+  font-size: 0.75rem; /* ← REDUZIDO de 0.875rem */
   font-weight: 600;
   color: #6b7280;
   margin-top: 0.25rem;
@@ -411,18 +419,18 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1.5rem;
+  padding: 1rem; /* ← REDUZIDO de 1.5rem */
   background: linear-gradient(135deg, #f9fafb, #f3f4f6);
   border-radius: 0.75rem;
   border: 2px solid #e5e7eb;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem; /* ← REDUZIDO de 1.5rem */
 }
 
 .exportacao-header h3 {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  font-size: 1.125rem;
+  gap: 0.5rem; /* ← REDUZIDO */
+  font-size: 1rem; /* ← REDUZIDO de 1.125rem */
   font-weight: 700;
   color: #1f2937;
   margin: 0;
@@ -430,17 +438,18 @@
 
 .exportacao-botoes {
   display: flex;
-  gap: 0.75rem;
+  gap: 0.5rem; /* ← REDUZIDO */
 }
 
 .btn-export {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
+  gap: 0.4rem; /* ← REDUZIDO */
+  padding: 0.6rem 1rem; /* ← REDUZIDO */
   border: none;
   border-radius: 0.5rem;
   font-weight: 700;
+  font-size: 0.8rem; /* ← ADICIONADO */
   cursor: pointer;
   transition: all 0.2s;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
@@ -462,45 +471,52 @@
 }
 
 /* ============================================
-   TABELA
+   TABELA - VERSÃO COMPACTA
    ============================================ */
 
 .tabela-container {
-  margin-top: 2rem;
-}
-
-.tabela-container h3 {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #1f2937;
-  margin-bottom: 1rem;
-}
-
-.tabela-container > div {
+  margin-top: 1.5rem; /* ← REDUZIDO */
+  width: 100%;
   overflow-x: auto;
+  overflow-y: visible;
+  background: white;
   border-radius: 0.75rem;
   border: 2px solid #e5e7eb;
 }
 
+.tabela-container h3 {
+  font-size: 1.1rem; /* ← REDUZIDO */
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 0.75rem; /* ← REDUZIDO */
+  padding: 1rem 1rem 0 1rem;
+}
+
 .tabela-visitas {
   width: 100%;
+  min-width: 100%;
   border-collapse: collapse;
   background: white;
+  table-layout: fixed; /* ← ALTERADO de auto para fixed */
 }
 
 .tabela-visitas thead {
   background: linear-gradient(135deg, #1f2937, #111827);
   color: white;
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 .tabela-visitas th {
-  padding: 1rem;
+  padding: 0.6rem 0.4rem; /* ← REDUZIDO */
   text-align: left;
   font-weight: 700;
-  font-size: 0.875rem;
+  font-size: 0.7rem; /* ← REDUZIDO */
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.03em; /* ← REDUZIDO */
   white-space: nowrap;
+  border: 1px solid #374151;
 }
 
 .tabela-visitas tbody tr {
@@ -513,20 +529,142 @@
 }
 
 .tabela-visitas td {
-  padding: 1rem;
-  font-size: 0.875rem;
+  padding: 0.6rem 0.4rem; /* ← REDUZIDO */
+  font-size: 0.75rem; /* ← REDUZIDO */
   color: #374151;
+  border: 1px solid #e5e7eb;
+  vertical-align: middle;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ============================================
+   LARGURAS COMPACTAS POR COLUNA
+   ============================================ */
+
+/* ID */
+.tabela-visitas th:nth-child(1),
+.tabela-visitas td:nth-child(1) {
+  width: 3%; /* ← Porcentagem para responsividade */
+  text-align: center;
+}
+
+/* VISITANTE */
+.tabela-visitas th:nth-child(2),
+.tabela-visitas td:nth-child(2) {
+  width: 12%;
+}
+
+/* CPF */
+.tabela-visitas th:nth-child(3),
+.tabela-visitas td:nth-child(3) {
+  width: 9%;
+}
+
+/* MOTIVO */
+.tabela-visitas th:nth-child(4),
+.tabela-visitas td:nth-child(4) {
+  width: 10%;
+}
+
+/* DEPARTAMENTO */
+.tabela-visitas th:nth-child(5),
+.tabela-visitas td:nth-child(5) {
+  width: 12%;
+}
+
+/* RESPONSÁVEL */
+.tabela-visitas th:nth-child(6),
+.tabela-visitas td:nth-child(6) {
+  width: 12%;
+}
+
+/* DATA */
+.tabela-visitas th:nth-child(7),
+.tabela-visitas td:nth-child(7) {
+  width: 8%;
+  text-align: center;
+}
+
+/* HORA CHEGADA */
+.tabela-visitas th:nth-child(8),
+.tabela-visitas td:nth-child(8) {
+  width: 7%;
+  text-align: center;
+}
+
+/* HORA CHAMADA */
+.tabela-visitas th:nth-child(9),
+.tabela-visitas td:nth-child(9) {
+  width: 7%;
+  text-align: center;
+}
+
+/* HORA SAÍDA */
+.tabela-visitas th:nth-child(10),
+.tabela-visitas td:nth-child(10) {
+  width: 7%;
+  text-align: center;
+}
+
+/* TEMPO TOTAL */
+.tabela-visitas th:nth-child(11),
+.tabela-visitas td:nth-child(11) {
+  width: 7%;
+  text-align: center;
+  font-weight: 600;
+  color: #059669;
+}
+
+/* STATUS */
+.tabela-visitas th:nth-child(12),
+.tabela-visitas td:nth-child(12) {
+  width: 9%;
+  text-align: center;
+}
+
+/* Zebra striping */
+.tabela-visitas tbody tr:nth-child(even) {
+  background-color: #f8f9fa;
+}
+
+.tabela-visitas tbody tr:hover {
+  background-color: #e9ecef !important;
 }
 
 .status-badge {
   display: inline-block;
-  padding: 0.375rem 0.75rem;
+  padding: 0.25rem 0.5rem; /* ← REDUZIDO */
   border-radius: 9999px;
-  font-size: 0.75rem;
+  font-size: 0.65rem; /* ← REDUZIDO */
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.025em;
   color: white;
+  white-space: nowrap;
+}
+
+/* ============================================
+   SCROLL CUSTOMIZADO
+   ============================================ */
+
+.tabela-container::-webkit-scrollbar {
+  height: 8px; /* ← REDUZIDO */
+}
+
+.tabela-container::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+.tabela-container::-webkit-scrollbar-thumb {
+  background: #94a3b8;
+  border-radius: 4px;
+}
+
+.tabela-container::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
 }
 
 /* ============================================
@@ -538,7 +676,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 4rem 2rem;
+  padding: 3rem 2rem; /* ← REDUZIDO */
   text-align: center;
   color: #6b7280;
 }
@@ -561,18 +699,18 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 4rem 2rem;
+  padding: 3rem 2rem; /* ← REDUZIDO */
   text-align: center;
 }
 
 .empty-icon {
-  font-size: 4rem;
+  font-size: 3rem; /* ← REDUZIDO */
   opacity: 0.3;
   margin-bottom: 1rem;
 }
 
 .empty-state p {
-  font-size: 1.125rem;
+  font-size: 1rem; /* ← REDUZIDO */
   font-weight: 500;
   color: #6b7280;
 }
@@ -608,7 +746,7 @@
   }
 
   .relatorio-card {
-    padding: 1.5rem;
+    padding: 1rem;
   }
 
   .relatorio-header {
@@ -659,27 +797,21 @@
     width: 100%;
     justify-content: center;
   }
-
-  .tabela-visitas th,
-  .tabela-visitas td {
-    padding: 0.75rem 0.5rem;
-    font-size: 0.75rem;
-  }
 }
 
 @media (max-width: 480px) {
   .header-info h1 {
-    font-size: 1.25rem;
+    font-size: 1.1rem;
   }
 
   .card-content h3 {
-    font-size: 1.5rem;
+    font-size: 1.25rem;
   }
 
   .tabela-visitas th,
   .tabela-visitas td {
-    padding: 0.5rem 0.25rem;
-    font-size: 0.7rem;
+    padding: 0.4rem 0.2rem;
+    font-size: 0.65rem;
   }
 }
 

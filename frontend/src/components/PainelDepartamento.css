@@ -23,6 +23,7 @@
   bottom: 0;
   width: 100vw; /* Largura total da viewport */
   height: 100vh; /* Altura total da viewport */
+  background-image: url('C:\Users\jonathan01062\Documents\CODE\Nova pasta\Nova pasta\Recpcao\frontend\src\assets\confederal.png');
   background-position: center center;
   background-repeat: no-repeat;
   background-size: cover; /* ADICIONADO: Faz a imagem cobrir toda a área */

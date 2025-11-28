@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { User, Building2, LogOut, Send, IdCard } from 'lucide-react';
 import './PainelRecepcao.css';
-import imagemFundo from '../assets/confederal.png';
 
 export default function PainelRecepcao({ usuario, onLogout }) {
   const [nome, setNome] = useState('');
@@ -9,6 +8,7 @@ export default function PainelRecepcao({ usuario, onLogout }) {
   const [motivo, setMotivo] = useState('');
   const [matricula, setMatricula] = useState('');
   const [departamentoId, setDepartamentoId] = useState(2);
+  const [preferencial, setPreferencial] = useState(false);
   const [mensagem, setMensagem] = useState('');
   const [carregando, setCarregando] = useState(false);
   const [estatisticas, setEstatisticas] = useState(null);
@@ -26,6 +26,31 @@ export default function PainelRecepcao({ usuario, onLogout }) {
       setEstatisticas(data);
     } catch (error) {
       console.error('Erro ao buscar estatísticas:', error);
+    }
+  };
+
+  const buscarVisitantePorCPF = async (cpfDigitado) => {
+    const cpfLimpo = cpfDigitado.replace(/\D/g, '');
+    
+    // Só busca quando o CPF tiver 11 dígitos completos
+    if (cpfLimpo.length !== 11) return;
+
+    try {
+      const response = await fetch(`https://192.167.2.41:3001/api/visitantes/${cpfLimpo}`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        // Preenche automaticamente os campos com os dados encontrados
+        setNome(data.nome || '');
+        // A matrícula vem do campo 'matricula' do visitante
+        setMatricula(data.matricula || '');
+        setPreferencial(data.preferencial || false);
+        setMensagem('✅ Visitante encontrado no sistema!');
+        setTimeout(() => setMensagem(''), 2000);
+      }
+    } catch (error) {
+      // Se não encontrar, não faz nada (visitante novo)
+      console.log('Visitante não encontrado - novo cadastro');
     }
   };
 
@@ -48,6 +73,7 @@ export default function PainelRecepcao({ usuario, onLogout }) {
           departamento_id: departamentoId,
           motivo: motivo.trim(),
           observacao: matricula.trim(), // Envia matrícula como observação no backend
+          preferencial: preferencial,
           usuario_id: usuario.id
         }),
       });
@@ -59,6 +85,7 @@ export default function PainelRecepcao({ usuario, onLogout }) {
         setCpf('');
         setMotivo('');
         setMatricula('');
+        setPreferencial(false);
         buscarEstatisticas();
         setTimeout(() => setMensagem(''), 3000);
       } else {
@@ -90,17 +117,17 @@ export default function PainelRecepcao({ usuario, onLogout }) {
         cpfLimpo = cpfLimpo.replace(/(\d{3})(\d{1,3})/, '$1.$2');
       }
       setCpf(cpfLimpo);
+      
+      // Busca o visitante quando o CPF estiver completo
+      buscarVisitantePorCPF(cpfLimpo);
     }
   };
 
   return (
     <div className="painel-recepcao-container">
       {/* Fundo com Imagem */}
-      <div 
-        className="painel-recepcao-background"
-        style={{ backgroundImage: `url(${imagemFundo})` }}
-      />
-  
+      <div className="painel-recepcao-background"></div>
+      
       {/* Overlay Gradiente */}
       <div className="painel-recepcao-overlay"></div>
 
@@ -127,6 +154,26 @@ export default function PainelRecepcao({ usuario, onLogout }) {
 
           {/* Formulário */}
           <div className="painel-recepcao-form">
+            {/* CPF - Primeiro campo com autofocus */}
+            <div className="painel-recepcao-form-group">
+              <label className="painel-recepcao-label">
+                CPF*
+              </label>
+              <input
+                type="text"
+                value={cpf}
+                onChange={(e) => formatarCPF(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder="000.000.000-00"
+                maxLength="14"
+                className="painel-recepcao-input"
+                autoFocus
+              />
+              <p className="painel-recepcao-input-hint">
+                Digite o CPF para buscar visitante cadastrado
+              </p>
+            </div>
+
             {/* Nome Completo */}
             <div className="painel-recepcao-form-group">
               <label className="painel-recepcao-label">
@@ -157,22 +204,6 @@ export default function PainelRecepcao({ usuario, onLogout }) {
                 onKeyPress={handleKeyPress}
                 placeholder="Digite a matrícula"
                 maxLength="5"
-                className="painel-recepcao-input"
-              />
-            </div>
-
-            {/* CPF */}
-            <div className="painel-recepcao-form-group">
-              <label className="painel-recepcao-label">
-                CPF*
-              </label>
-              <input
-                type="text"
-                value={cpf}
-                onChange={(e) => formatarCPF(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="000.000.000-00"
-                maxLength="14"
                 className="painel-recepcao-input"
               />
             </div>
@@ -214,16 +245,12 @@ export default function PainelRecepcao({ usuario, onLogout }) {
                   <div className="painel-recepcao-dept-name">Departamento Pessoal</div>
                 </button>
 
-                {
                 <button
                   onClick={() => setDepartamentoId(6)}
                   className={`painel-recepcao-dept-btn finance ${departamentoId === 6 ? 'active' : ''}`}
                 >
                   <div className="painel-recepcao-dept-name">Departamento Financeiro</div>
                 </button>
-
-                }
-
               </div>
             </div>
 

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart3, Download, FileDown, Filter, ArrowLeft } from 'lucide-react';
 import './PainelRelatorio.css';
-import imagemFundo from '../assets/confederal.png';
 
 export default function PainelRelatorio({ onVoltar }) {
   const [visitas, setVisitas] = useState([]);
@@ -21,7 +20,7 @@ export default function PainelRelatorio({ onVoltar }) {
   const [departamentoFiltro, setDepartamentoFiltro] = useState('todos');
   const [statusFiltro, setStatusFiltro] = useState('todos');
   const [departamentos, setDepartamentos] = useState([]);
-  const [filtroAtivo, setFiltroAtivo] = useState('hoje'); // NOVO: Estado para filtro ativo
+  const [filtroAtivo, setFiltroAtivo] = useState('hoje');
 
   useEffect(() => {
     buscarDepartamentos();
@@ -71,7 +70,7 @@ export default function PainelRelatorio({ onVoltar }) {
 
     setDataInicio(inicio);
     setDataFim(fim);
-    setFiltroAtivo(periodo); // Define qual filtro está ativo
+    setFiltroAtivo(periodo);
     buscarRelatorios(inicio, fim, departamentoFiltro, statusFiltro);
   };
 
@@ -83,7 +82,6 @@ export default function PainelRelatorio({ onVoltar }) {
 
     setCarregando(true);
     try {
-      // Buscar visitas
       let urlVisitas = `https://192.167.2.41:3001/api/relatorios/visitas?data_inicio=${inicio}&data_fim=${fim}`;
       if (depto && depto !== 'todos') {
         urlVisitas += `&departamento_id=${depto}`;
@@ -95,10 +93,12 @@ export default function PainelRelatorio({ onVoltar }) {
       const resVisitas = await fetch(urlVisitas);
       const dataVisitas = await resVisitas.json();
       
-      console.log('Visitas recebidas:', dataVisitas);
+      console.log('=== DADOS RECEBIDOS DO BACKEND ===');
+      console.log('Primeira visita:', dataVisitas[0]);
+      console.log('Campos disponíveis:', dataVisitas[0] ? Object.keys(dataVisitas[0]) : 'Nenhum dado');
+      
       setVisitas(dataVisitas);
 
-      // Buscar estatísticas COM OS MESMOS FILTROS
       let urlStats = `https://192.167.2.41:3001/api/relatorios/estatisticas?data_inicio=${inicio}&data_fim=${fim}`;
       if (depto && depto !== 'todos') {
         urlStats += `&departamento_id=${depto}`;
@@ -110,7 +110,6 @@ export default function PainelRelatorio({ onVoltar }) {
       const resStats = await fetch(urlStats);
       const dataStats = await resStats.json();
       
-      console.log('Estatísticas recebidas:', dataStats);
       setEstatisticas(dataStats);
     } catch (error) {
       console.error('Erro ao buscar relatórios:', error);
@@ -120,37 +119,92 @@ export default function PainelRelatorio({ onVoltar }) {
   };
 
   const aplicarFiltros = () => {
-    setFiltroAtivo(null); // Remove destaque dos filtros rápidos
+    setFiltroAtivo(null);
     buscarRelatorios(dataInicio, dataFim, departamentoFiltro, statusFiltro);
   };
 
   const limparFiltros = () => {
     setDepartamentoFiltro('todos');
     setStatusFiltro('todos');
-    aplicarFiltroRapido('hoje'); // Volta para "Hoje"
+    aplicarFiltroRapido('hoje');
   };
 
+  // Busca o campo com diferentes nomes possíveis
+  const obterCampo = (visita, ...possiveisNomes) => {
+    for (const nome of possiveisNomes) {
+      if (visita[nome] !== undefined && visita[nome] !== null) {
+        return visita[nome];
+      }
+    }
+    return null;
+  };
+
+  // Formatar apenas a DATA: DD/MM/YYYY
   const formatarData = (dataString) => {
-    if (!dataString) return 'N/A';
-    const data = new Date(dataString);
-    return data.toLocaleString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    if (!dataString) return '-';
+    
+    try {
+      const data = new Date(dataString);
+      if (isNaN(data.getTime())) return '-';
+      
+      const dia = String(data.getDate()).padStart(2, '0');
+      const mes = String(data.getMonth() + 1).padStart(2, '0');
+      const ano = data.getFullYear();
+      
+      return `${dia}/${mes}/${ano}`;
+    } catch (error) {
+      return '-';
+    }
+  };
+
+  // Formatar apenas a HORA: HH:MM:SS
+  const formatarHora = (dataString) => {
+    if (!dataString) return '-';
+    
+    try {
+      const data = new Date(dataString);
+      if (isNaN(data.getTime())) return '-';
+      
+      const hora = String(data.getHours()).padStart(2, '0');
+      const minuto = String(data.getMinutes()).padStart(2, '0');
+      const segundo = String(data.getSeconds()).padStart(2, '0');
+      
+      return `${hora}:${minuto}:${segundo}`;
+    } catch (error) {
+      return '-';
+    }
   };
 
   const formatarCPF = (cpf) => {
-    if (!cpf) return 'N/A';
+    if (!cpf) return '-';
     return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
   };
 
-  const formatarTempo = (minutos) => {
-    if (minutos === null || minutos === undefined) return 'N/A';
-    if (minutos === 0) return '0 min';
-    return `${minutos} min`;
+  // Calcular tempo total em minutos
+  const calcularTempoTotal = (horaChegada, horaSaida) => {
+    if (!horaChegada || !horaSaida) return '-';
+    
+    try {
+      const chegada = new Date(horaChegada);
+      const saida = new Date(horaSaida);
+      
+      if (isNaN(chegada.getTime()) || isNaN(saida.getTime())) return '-';
+      
+      const diferencaMs = saida - chegada;
+      const minutos = Math.floor(diferencaMs / 60000);
+      
+      if (minutos < 0) return '-';
+      
+      const horas = Math.floor(minutos / 60);
+      const mins = minutos % 60;
+      
+      if (horas > 0) {
+        return `${horas}h ${mins}min`;
+      }
+      return `${mins}min`;
+    } catch (error) {
+      return '-';
+    }
   };
 
   const getStatusColor = (status) => {
@@ -179,19 +233,15 @@ export default function PainelRelatorio({ onVoltar }) {
     }
   };
 
-const exportarCSV = () => {
+  const exportarCSV = () => {
     if (visitas.length === 0) {
       alert('Não há dados para exportar');
       return;
     }
 
-    // Formatação das datas para exibição
-    const dataInicioFormatada = dataInicio ? new Date(dataInicio + 'T00:00:00').toLocaleDateString('pt-BR') : 'N/A';
-    const dataFimFormatada = dataFim ? new Date(dataFim + 'T00:00:00').toLocaleDateString('pt-BR') : 'N/A';
-    const dataAtual = new Date().toLocaleDateString('pt-BR');
-    const horaAtual = new Date().toLocaleTimeString('pt-BR');
+    const dataInicioFormatada = dataInicio ? new Date(dataInicio + 'T00:00:00').toLocaleDateString('pt-BR') : '-';
+    const dataFimFormatada = dataFim ? new Date(dataFim + 'T00:00:00').toLocaleDateString('pt-BR') : '-';
 
-    // Determinar o período
     let periodoTexto = '';
     if (filtroAtivo) {
       const periodos = {
@@ -206,54 +256,48 @@ const exportarCSV = () => {
       periodoTexto = 'Período Personalizado';
     }
 
-    const totalTempoEspera = visitas.reduce((acc, v) => acc + (v.tempo_espera_minutos || 0), 0);
-    const totalTempoAtendimento = visitas.reduce((acc, v) => acc + (v.tempo_atendimento_minutos || 0), 0);
-    const mediaTempoEspera = visitas.length > 0 ? (totalTempoEspera / visitas.length).toFixed(1) : 0;
-    const mediaTempoAtendimento = visitas.length > 0 ? (totalTempoAtendimento / visitas.length).toFixed(1) : 0;
-
-    // Contadores por status
     const statusCount = {
       aguardando: visitas.filter(v => v.status === 'aguardando').length,
       atendimento: visitas.filter(v => v.status === 'chamado').length,
       finalizado: visitas.filter(v => v.status === 'finalizado').length
     };
 
+    // HEADERS: DATA ANTES DE HORA CHEGADA + TEMPO TOTAL
     const headers = [
-      'Data',
-      'Hora',
+      'ID',
       'Visitante',
       'CPF',
       'Matrícula',
       'Motivo',
       'Departamento',
       'Responsável',
-      'Tempo Espera (min)',
-      'Tempo Atendimento (min)',
-      'Tempo Total (min)',
+      'Data',
+      'Hora Chegada',
+      'Hora Chamada',
+      'Hora Saída',
+      'Tempo Total',       // ← NOVA COLUNA
       'Status'
     ];
 
+    // ROWS: DATA ANTES DE HORA CHEGADA + TEMPO TOTAL
     const rows = visitas.map(v => {
-      const dataHora = v.data_entrada ? new Date(v.data_entrada) : null;
-      const data = dataHora ? dataHora.toLocaleDateString('pt-BR') : 'N/A';
-      const hora = dataHora ? dataHora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : 'N/A';
-
-      const tempoEspera = v.tempo_espera_minutos || 0;
-      const tempoAtendimento = v.tempo_atendimento_minutos || 0;
-      const tempoTotal = (tempoEspera + tempoAtendimento) || 'N/A';
+      const horaChegada = obterCampo(v, 'hora_chegada', 'data_entrada', 'data_chegada', 'created_at');
+      const horaChamada = obterCampo(v, 'hora_chamada', 'data_chamada', 'chamado_em');
+      const horaSaida = obterCampo(v, 'hora_saida', 'data_saida', 'finalizado_em');
 
       return [
-        data,
-        hora,
-        v.visitante_nome || 'N/A',
-        v.visitante_cpf ? `'${v.visitante_cpf}` : 'N/A', // Apóstrofo força texto no Excel
-        v.visitante_matricula ? `'${v.visitante_matricula}` : 'N/A', // Apóstrofo força texto no Excel
-        v.motivo || 'N/A',
-        v.departamento_nome || 'N/A',
-        v.responsavel_nome || 'N/A',
-        v.tempo_espera_minutos || 'N/A',
-        v.tempo_atendimento_minutos || 'N/A',
-        tempoTotal,
+        v.id || '-',
+        v.visitante_nome || '-',
+        v.visitante_cpf ? `'${v.visitante_cpf}` : '-',
+        v.visitante_matricula ? `'${v.visitante_matricula}` : '-',
+        v.motivo || '-',
+        v.departamento_nome || '-',
+        v.responsavel_nome || '-',
+        formatarData(horaChegada),           // Data
+        formatarHora(horaChegada),           // Hora Chegada
+        formatarHora(horaChamada),           // Hora Chamada
+        formatarHora(horaSaida),             // Hora Saída
+        calcularTempoTotal(horaChegada, horaSaida),  // Tempo Total
         getStatusLabel(v.status)
       ];
     });
@@ -312,9 +356,6 @@ const exportarCSV = () => {
         font-size: 12pt;
         width: 40%;
       }
-      .chart-container {
-        margin: 40px 0;
-      }
       .chart-title {
         background-color: #34495e;
         color: white;
@@ -350,7 +391,6 @@ const exportarCSV = () => {
       </head>
       <body>
 
-      <!-- INFORMAÇÕES DO RELATÓRIO -->
       <div style="margin-bottom: 20px; padding: 15px; background-color: #f8f9fa; border: 2px solid #1a5490; border-radius: 5px;">
       <table style="width: 100%; margin-bottom: 0;">
       <tbody>
@@ -367,7 +407,6 @@ const exportarCSV = () => {
       </table>
       </div>
 
-      <!-- RESUMO GERAL -->
       <div class="summary-container">
       <div class="section-title">RELATÓRIO DE VISITAS - RESUMO GERAL</div>
       <table>
@@ -380,14 +419,6 @@ const exportarCSV = () => {
       <tr>
       <td class="summary-label">Total de Registros:</td>
       <td class="summary-value">${visitas.length}</td>
-      </tr>
-      <tr>
-      <td class="summary-label">Tempo Médio de Espera:</td>
-      <td class="summary-value">${mediaTempoEspera} minutos</td>
-      </tr>
-      <tr>
-      <td class="summary-label">Tempo Médio de Atendimento:</td>
-      <td class="summary-value">${mediaTempoAtendimento} minutos</td>
       </tr>
       <tr>
       <td class="summary-label">Visitantes Aguardando:</td>
@@ -405,7 +436,6 @@ const exportarCSV = () => {
       </table>
       </div>
 
-      <!-- TABELA DETALHADA -->
       <div style="margin-top: 40px; page-break-before: always;">
       <div class="chart-title">DETALHAMENTO DE VISITAS</div>
       <table>
@@ -417,9 +447,10 @@ const exportarCSV = () => {
       <tbody>
       ${rows.map((row) => {
         let cellClass = 'cell';
-        if (row[11].includes('AGUARDANDO')) {
+        const statusCell = row[row.length - 1];
+        if (statusCell.includes('AGUARDANDO')) {
           cellClass = 'cell cell-aguardando';
-        } else if (row[11].includes('ATENDIMENTO')) {
+        } else if (statusCell.includes('ATENDIMENTO')) {
           cellClass = 'cell cell-atendimento';
         } else {
           cellClass = 'cell cell-finalizado';
@@ -442,43 +473,18 @@ const exportarCSV = () => {
     link.click();
   };
 
-  // Função para carregar scripts dinamicamente
-  const loadScript = (src) => {
-    return new Promise((resolve, reject) => {
-      const existingScript = document.querySelector(`script[src="${src}"]`);
-      if (existingScript) {
-        resolve();
-        return;
-      }
-
-      const script = document.createElement('script');
-      script.src = src;
-      script.onload = () => resolve();
-      script.onerror = () => reject(new Error(`Erro ao carregar ${src}`));
-      document.body.appendChild(script);
-    });
-  };
-
   const exportarPDF = () => {
     alert('Funcionalidade de exportação para PDF será implementada em breve');
   };
 
   return (
     <div className="painel-relatorio">
-      {/* Background com Imagem */}
-      <div 
-        className="relatorio-background"
-        style={{ backgroundImage: `url(${imagemFundo})` }}
-      />
-      
-      {/* Overlay */}
+      <div className="relatorio-background"></div>
       <div className="relatorio-overlay"></div>
       
-      {/* Conteúdo */}
       <div className="relatorio-content">
         <div className="relatorio-card">
           
-          {/* Header */}
           <div className="relatorio-header">
             <div className="header-left">
               <div className="header-icon">
@@ -495,7 +501,6 @@ const exportarCSV = () => {
             </button>
           </div>
 
-          {/* Filtros Rápidos */}
           <div className="filtros-rapidos">
             <button 
               className={`filtro-btn ${filtroAtivo === 'hoje' ? 'active' : ''}`}
@@ -533,7 +538,6 @@ const exportarCSV = () => {
             </button>
           </div>
 
-          {/* Filtros Avançados */}
           <div className="filtros-avancados">
             <div className="filtro-item">
               <label>Data Início:</label>
@@ -580,7 +584,6 @@ const exportarCSV = () => {
             </button>
           </div>
 
-          {/* Cards de Estatísticas */}
           <div className="cards-estatisticas">
             <div className="card-stat card-azul">
               <div className="card-icon">👥</div>
@@ -631,7 +634,6 @@ const exportarCSV = () => {
             </div>
           </div>
 
-          {/* Botões de Exportação */}
           <div className="exportacao-header">
             <h3>
               <FileDown size={20} />
@@ -640,7 +642,7 @@ const exportarCSV = () => {
             <div className="exportacao-botoes">
               <button className="btn-export btn-csv" onClick={exportarCSV}>
                 <Download size={18} />
-                Exportar CSV
+                Exportar Excel
               </button>
               <button className="btn-export btn-pdf" onClick={exportarPDF}>
                 <Download size={18} />
@@ -649,7 +651,7 @@ const exportarCSV = () => {
             </div>
           </div>
 
-          {/* Tabela de Visitas */}
+          {/* TABELA: UMA COLUNA DE DATA + TRÊS COLUNAS DE HORA */}
           <div className="tabela-container">
             <h3>Detalhamento de Visitas</h3>
             
@@ -664,38 +666,50 @@ const exportarCSV = () => {
               <table className="tabela-visitas">
                 <thead>
                   <tr>
-                    <th>DATA/HORA</th>
+                    <th>ID</th>
                     <th>VISITANTE</th>
                     <th>CPF</th>
                     <th>MOTIVO</th>
                     <th>DEPARTAMENTO</th>
                     <th>RESPONSÁVEL</th>
-                    <th>TEMPO ESPERA</th>
-                    <th>TEMPO ATEND.</th>
+                    <th>DATA</th>
+                    <th>HORA CHEGADA</th>
+                    <th>HORA CHAMADA</th>
+                    <th>HORA SAÍDA</th>
+                    <th>TEMPO TOTAL</th>
                     <th>STATUS</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {visitas.map((visita) => (
-                    <tr key={visita.id}>
-                      <td>{formatarData(visita.data_entrada)}</td>
-                      <td>{visita.visitante_nome || 'N/A'}</td>
-                      <td>{formatarCPF(visita.visitante_cpf)}</td>
-                      <td>{visita.motivo || '-'}</td>
-                      <td>{visita.departamento_nome || 'N/A'}</td>
-                      <td>{visita.responsavel_nome || 'N/A'}</td>
-                      <td>{formatarTempo(visita.tempo_espera_minutos)}</td>
-                      <td>{formatarTempo(visita.tempo_atendimento_minutos)}</td>
-                      <td>
-                        <span
-                          className="status-badge"
-                          style={{ backgroundColor: getStatusColor(visita.status) }}
-                        >
-                          {getStatusLabel(visita.status)}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
+                  {visitas.map((visita) => {
+                    const horaChegada = obterCampo(visita, 'hora_chegada', 'data_entrada', 'data_chegada', 'created_at');
+                    const horaChamada = obterCampo(visita, 'hora_chamada', 'data_chamada', 'chamado_em');
+                    const horaSaida = obterCampo(visita, 'hora_saida', 'data_saida', 'finalizado_em');
+
+                    return (
+                      <tr key={visita.id}>
+                        <td>{visita.id}</td>
+                        <td>{visita.visitante_nome || '-'}</td>
+                        <td>{formatarCPF(visita.visitante_cpf)}</td>
+                        <td>{visita.motivo || '-'}</td>
+                        <td>{visita.departamento_nome || '-'}</td>
+                        <td>{visita.responsavel_nome || '-'}</td>
+                        <td>{formatarData(horaChegada)}</td>
+                        <td>{formatarHora(horaChegada)}</td>
+                        <td>{formatarHora(horaChamada)}</td>
+                        <td>{formatarHora(horaSaida)}</td>
+                        <td>{calcularTempoTotal(horaChegada, horaSaida)}</td>
+                        <td>
+                          <span
+                            className="status-badge"
+                            style={{ backgroundColor: getStatusColor(visita.status) }}
+                          >
+                            {getStatusLabel(visita.status)}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             )}

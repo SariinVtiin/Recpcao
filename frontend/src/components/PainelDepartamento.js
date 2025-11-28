@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Building2, LogOut, Clock, UserCheck, CheckCircle } from 'lucide-react';
 import './PainelDepartamento.css';
-import imagemFundo from '../assets/confederal.png';
 
 export default function PainelDepartamento({ usuario, onLogout }) {
   const [visitasAguardando, setVisitasAguardando] = useState([]);
@@ -10,10 +9,14 @@ export default function PainelDepartamento({ usuario, onLogout }) {
   const [carregando, setCarregando] = useState(false);
   const [abaAtiva, setAbaAtiva] = useState('aguardando');
   const [debugNotificacao, setDebugNotificacao] = useState('');
+  const [temporizadores, setTemporizadores] = useState({});
   
   // Usar useRef para manter o valor entre renders
   const ultimaQuantidadeRef = useRef(0);
   const primeiraCarregaRef = useRef(true);
+
+  // Constante de tempo mínimo de atendimento (1min = 60 segundos)
+  const TEMPO_MINIMO_ATENDIMENTO = 60 * 1000; // 60 segundos em milissegundos
 
   // Solicitar permissão de notificações
   useEffect(() => {
@@ -53,6 +56,47 @@ export default function PainelDepartamento({ usuario, onLogout }) {
 
     solicitarPermissao();
   }, []);
+
+  // Atualizar temporizadores a cada segundo
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTemporizadores(prev => {
+        const novo = { ...prev };
+        Object.keys(novo).forEach(key => {
+          novo[key] = Date.now();
+        });
+        return novo;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Função para calcular tempo restante até poder finalizar
+  const calcularTempoRestante = (horaChamada) => {
+    const tempoDecorrido = Date.now() - new Date(horaChamada).getTime();
+    const tempoRestante = TEMPO_MINIMO_ATENDIMENTO - tempoDecorrido;
+    
+    if (tempoRestante <= 0) return 0;
+    
+    return Math.ceil(tempoRestante / 1000); // Retorna em segundos
+  };
+
+  // Função para verificar se pode finalizar
+  const podeFinalizarAtendimento = (horaChamada) => {
+    return calcularTempoRestante(horaChamada) <= 0;
+  };
+
+  // Função para formatar tempo restante
+  const formatarTempoRestante = (segundos) => {
+    if (segundos <= 0) return '0s';
+    const mins = Math.floor(segundos / 60);
+    const secs = segundos % 60;
+    if (mins > 0) {
+      return `${mins}min ${secs}s`;
+    }
+    return `${secs}s`;
+  };
 
   // Função para mostrar notificação
   const mostrarNotificacao = useCallback((quantidade) => {
@@ -113,14 +157,14 @@ export default function PainelDepartamento({ usuario, onLogout }) {
     }
   }, []);
 
-const buscarAguardando = useCallback(async () => {
+  const buscarAguardando = useCallback(async () => {
     try {
       const response = await fetch(
         `https://192.167.2.41:3001/api/visitas/aguardando/${usuario.departamento_id}`
       );
       const data = await response.json();
 
-      // ✅ NOVO: Filtrar apenas visitas do dia atual
+      // ✅ Filtrar apenas visitas do dia atual
       const hoje = new Date();
       hoje.setHours(0, 0, 0, 0);
       
@@ -131,7 +175,17 @@ const buscarAguardando = useCallback(async () => {
         return dataVisita.getTime() === hoje.getTime();
       });
 
-      const visitasOrdenadas = visitasHoje.sort(
+      // ⏱️ TIMER: Filtrar visitas que já passaram do tempo de deslocamento (1 minuto)
+      const TEMPO_DESLOCAMENTO_MS = 1 * 60 * 1000; // 1 minuto em milissegundos
+      const agora = new Date().getTime();
+      
+      const visitasComDelay = visitasHoje.filter(v => {
+        const horaRegistro = new Date(v.hora_chegada).getTime();
+        const tempoDecorrido = agora - horaRegistro;
+        return tempoDecorrido >= TEMPO_DESLOCAMENTO_MS;
+      });
+
+      const visitasOrdenadas = visitasComDelay.sort(
         (a, b) => new Date(b.hora_chegada) - new Date(a.hora_chegada)
       );
 
@@ -168,7 +222,7 @@ const buscarAguardando = useCallback(async () => {
       );
       const data = await response.json();
 
-      // ✅ NOVO: Filtrar apenas visitas do dia atual
+      // ✅ Filtrar apenas visitas do dia atual
       const hoje = new Date();
       hoje.setHours(0, 0, 0, 0);
       
@@ -184,6 +238,14 @@ const buscarAguardando = useCallback(async () => {
       );
 
       setVisitasChamados(visitasOrdenadas);
+      
+      // Inicializar temporizadores para visitas chamadas
+      const novosTemp = {};
+      visitasOrdenadas.forEach(v => {
+        novosTemp[v.visita_id] = Date.now();
+      });
+      setTemporizadores(novosTemp);
+
     } catch (error) {
       console.error('❌ Erro ao buscar chamados:', error);
     }
@@ -264,7 +326,27 @@ const buscarAguardando = useCallback(async () => {
     }
   };
 
-  const finalizarAtendimento = async (visitaId, nomeVisitante) => {
+  const finalizarAtendimento = async (visitaId, nomeVisitante, horaChamada) => {
+    // Verificar se passou o tempo mínimo
+    if (!podeFinalizarAtendimento(horaChamada)) {
+      const tempoRestante = calcularTempoRestante(horaChamada);
+      const mins = Math.floor(tempoRestante / 60);
+      const secs = tempoRestante % 60;
+      
+      let mensagemTempo = '';
+      if (mins > 0) {
+        mensagemTempo = `${mins} minuto${mins > 1 ? 's' : ''} e ${secs} segundo${secs > 1 ? 's' : ''}`;
+      } else {
+        mensagemTempo = `${secs} segundo${secs > 1 ? 's' : ''}`;
+      }
+      
+      alert(
+        '⏱️ TEMPO MÍNIMO DE ATENDIMENTO NÃO ATINGIDO\n\n' +
+        `Por favor, aguarde mais ${mensagemTempo} para finalizar este atendimento.`
+      );
+      return;
+    }
+
     if (!window.confirm(`Finalizar atendimento de ${nomeVisitante}?`)) return;
 
     setCarregando(true);
@@ -275,6 +357,13 @@ const buscarAguardando = useCallback(async () => {
       );
 
       if (response.ok) {
+        // Remover do temporizador
+        setTemporizadores(prev => {
+          const novo = { ...prev };
+          delete novo[visitaId];
+          return novo;
+        });
+        
         await buscarChamados();
         await buscarFinalizados();
         setAbaAtiva('finalizados');
@@ -291,12 +380,13 @@ const buscarAguardando = useCallback(async () => {
 
   const calcularTempoEspera = (horaChegada) => {
     const diffMins = Math.floor((new Date() - new Date(horaChegada)) / 60000);
-    if (diffMins < 1) return 'Agora';
-    if (diffMins === 1) return '1 min';
-    if (diffMins < 60) return `${diffMins} mins`;
+    if (diffMins < 1) return '< 1min';
+    if (diffMins === 1) return '1min';
+    if (diffMins < 60) return `${diffMins}min`;
     const horas = Math.floor(diffMins / 60);
     const mins = diffMins % 60;
-    return `${horas}h ${mins}m`;
+    if (mins === 0) return `${horas}h`;
+    return `${horas}h ${mins}min`;
   };
 
   const calcularTempoAtendimento = (horaChegada, horaSaida) => {
@@ -309,12 +399,16 @@ const buscarAguardando = useCallback(async () => {
     return `${horas}h ${mins}m`;
   };
 
+  const calcularTempoEmAtendimento = (horaChamada) => {
+    const diffMins = Math.floor((new Date() - new Date(horaChamada)) / 60000);
+    if (diffMins < 1) return '< 1min';
+    if (diffMins === 1) return '1min';
+    return `${diffMins}min`;
+  };
+
   return (
     <div className="painel-dept-container">
-      <div 
-      className="painel-dept-background"
-      style={{ backgroundImage: `url(${imagemFundo})` }}
-      />
+      <div className="painel-dept-background"></div>
       <div className="painel-dept-overlay"></div>
 
       <div className="painel-dept-content">
@@ -448,41 +542,43 @@ const buscarAguardando = useCallback(async () => {
                   </div>
                 ) : (
                   <div className="painel-dept-visitas-list">
-                    {visitasChamados.map((visita) => (
-                      <div key={visita.visita_id} className="painel-dept-visita-card chamado">
-                        <div className="painel-dept-visita-info">
-                          <div className="painel-dept-visita-header">
-                            <div className="painel-dept-visita-nome">{visita.visitante_nome}</div>
-                            <span className="painel-dept-badge chamado">
-                              🔵 Em atendimento
-                            </span>
+                    {visitasChamados.map((visita) => {
+                      return (
+                        <div key={visita.visita_id} className="painel-dept-visita-card chamado">
+                          <div className="painel-dept-visita-info">
+                            <div className="painel-dept-visita-header">
+                              <div className="painel-dept-visita-nome">{visita.visitante_nome}</div>
+                              <span className="painel-dept-badge chamado">
+                                🔵 {calcularTempoEmAtendimento(visita.hora_chamada)}
+                              </span>
+                            </div>
+                            {visita.motivo && (
+                              <div className="painel-dept-visita-motivo">
+                                📋 {visita.motivo}
+                              </div>
+                            )}
+                            {visita.visitante_matricula && (
+                              <div className="painel-dept-visita-obs">
+                                🎫 Matrícula: {visita.visitante_matricula}
+                              </div>
+                            )}
+                            <div className="painel-dept-visita-horarios">
+                              <span>🕐 Chegada: {new Date(visita.hora_chegada).toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}</span>
+                              <span>📢 Chamado: {new Date(visita.hora_chamada).toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}</span>
+                            </div>
                           </div>
-                          {visita.motivo && (
-                            <div className="painel-dept-visita-motivo">
-                              📋 {visita.motivo}
-                            </div>
-                          )}
-                          {visita.visitante_matricula && (
-                            <div className="painel-dept-visita-obs">
-                              🎫 Matrícula: {visita.visitante_matricula}
-                            </div>
-                          )}
-                          <div className="painel-dept-visita-horarios">
-                            <span>🕐 Chegada: {new Date(visita.hora_chegada).toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}</span>
-                            <span>📢 Chamado: {new Date(visita.hora_chamada).toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}</span>
+                          <div className="painel-dept-actions">
+                            <button
+                              onClick={() => finalizarAtendimento(visita.visita_id, visita.visitante_nome, visita.hora_chamada)}
+                              disabled={carregando}
+                              className="painel-dept-btn finalizar"
+                            >
+                              ✅ Finalizar Atendimento
+                            </button>
                           </div>
                         </div>
-                        <div className="painel-dept-actions">
-                          <button
-                            onClick={() => finalizarAtendimento(visita.visita_id, visita.visitante_nome)}
-                            disabled={carregando}
-                            className="painel-dept-btn finalizar"
-                          >
-                            ✅ Finalizar Atendimento
-                          </button>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>

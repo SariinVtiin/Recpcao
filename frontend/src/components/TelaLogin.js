@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import { User, Lock, AlertCircle, LogIn, Building2 } from 'lucide-react';
 import './TelaLogin.css';
-import imagemFundo from '../assets/confederal.png';
 
 export default function TelaLogin({ onLogin }) {
   const [usuario, setUsuario] = useState('');
@@ -49,10 +48,7 @@ export default function TelaLogin({ onLogin }) {
   return (
     <div className="tela-login-container">
       {/* Fundo com Imagem */}
-      <div 
-        className="tela-login-background"
-        style={{ backgroundImage: `url(${imagemFundo})` }}
-      />
+      <div className="tela-login-background"></div>
       
       {/* Overlay Gradiente */}
       <div className="tela-login-overlay"></div>

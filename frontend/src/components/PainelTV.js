@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Clock, Volume2 } from 'lucide-react';
 import './PainelTV.css';
-import imagemFundo from '../assets/confederal.png';
 
 export default function PainelTV() {
   const [chamadaAtual, setChamadaAtual] = useState(null);
@@ -116,7 +115,7 @@ export default function PainelTV() {
   useEffect(() => {
     const buscarChamadas = async () => {
       try {
-        const response = await fetch('https://192.167.2.41:3001/api/visitas/chamadas-recentes');
+        const response = await fetch('https://192.167.0.116:3001/api/visitas/chamadas-recentes');
         
         if (!response.ok) {
           console.error('❌ Erro na resposta:', response.status);
@@ -187,10 +186,7 @@ export default function PainelTV() {
   return (
     <div className="painel-tv-container">
       {/* Fundo com Imagem */}
-      <div 
-      className="painel-tv-background"
-      style={{ backgroundImage: `url(${imagemFundo})` }}
-    />
+      <div className="painel-tv-background"></div>
       
       {/* Overlay Azul/Cinza */}
       <div className="painel-tv-overlay"></div>
