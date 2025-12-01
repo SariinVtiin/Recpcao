@@ -246,8 +246,8 @@ export default function PainelRecepcao({ usuario, onLogout }) {
                 </button>
 
                 <button
-                  onClick={() => setDepartamentoId(6)}
-                  className={`painel-recepcao-dept-btn finance ${departamentoId === 6 ? 'active' : ''}`}
+                  onClick={() => setDepartamentoId(5)}
+                  className={`painel-recepcao-dept-btn finance ${departamentoId === 5 ? 'active' : ''}`}
                 >
                   <div className="painel-recepcao-dept-name">Departamento Financeiro</div>
                 </button>

@@ -1104,7 +1104,7 @@ function iniciarServidor() {
       console.log('🚀 SISTEMA DE RECEPÇÃO EMPRESARIAL');
       console.log('   VERSÃO HTTPS ATIVADA 🔒');
       console.log('================================================');
-      console.log(`✅ Servidor HTTPS rodando em https://192.167.0.116:${port}`);
+      console.log(`✅ Servidor HTTPS rodando em https://192.167.2.41:${port}`);
       console.log(`⏰ Iniciado em: ${new Date().toLocaleString('pt-BR')}`);
       
       try {
@@ -1128,7 +1128,7 @@ function iniciarServidor() {
       console.log('🚀 SISTEMA DE RECEPÇÃO EMPRESARIAL');
       console.log('   VERSÃO HTTP (NÃO SEGURO)');
       console.log('================================================');
-      console.log(`✅ Servidor HTTP rodando em http://192.167.0.116:${port}`);
+      console.log(`✅ Servidor HTTP rodando em http://192.167.2.41:${port}`);
       console.log(`⏰ Iniciado em: ${new Date().toLocaleString('pt-BR')}`);
       
       try {

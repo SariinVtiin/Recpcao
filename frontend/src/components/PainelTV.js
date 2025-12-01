@@ -115,7 +115,7 @@ export default function PainelTV() {
   useEffect(() => {
     const buscarChamadas = async () => {
       try {
-        const response = await fetch('https://192.167.0.116:3001/api/visitas/chamadas-recentes');
+        const response = await fetch('https://192.167.2.41:3001/api/visitas/chamadas-recentes');
         
         if (!response.ok) {
           console.error('❌ Erro na resposta:', response.status);
