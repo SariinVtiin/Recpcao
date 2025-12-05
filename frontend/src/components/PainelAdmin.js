@@ -25,7 +25,7 @@ export default function PainelAdmin({ usuario, onLogout, onAbrirRelatorios }) {
 
   const buscarUsuarios = async () => {
     try {
-      const response = await fetch('https://192.167.2.41:3001/api/usuarios');
+      const response = await fetch('http://192.167.2.41:3001/api/usuarios');
       if (!response.ok) throw new Error('Erro ao buscar usuários');
       const data = await response.json();
       setUsuarios(Array.isArray(data) ? data : []);
@@ -39,7 +39,7 @@ export default function PainelAdmin({ usuario, onLogout, onAbrirRelatorios }) {
 
   const buscarDepartamentos = async () => {
     try {
-      const response = await fetch('https://192.167.2.41:3001/api/departamentos');
+      const response = await fetch('http://192.167.2.41:3001/api/departamentos');
       const data = await response.json();
       setDepartamentos(data);
     } catch (error) {
@@ -87,14 +87,14 @@ export default function PainelAdmin({ usuario, onLogout, onAbrirRelatorios }) {
 
       let response;
       if (editando) {
-        response = await fetch(`https://192.167.2.41:3001/api/usuarios/${editando}`, {
+        response = await fetch(`http://192.167.2.41:3001/api/usuarios/${editando}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(dados),
         });
       } else {
         dados.senha = senha.trim();
-        response = await fetch('https://192.167.2.41:3001/api/usuarios', {
+        response = await fetch('http://192.167.2.41:3001/api/usuarios', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(dados),
@@ -124,7 +124,7 @@ export default function PainelAdmin({ usuario, onLogout, onAbrirRelatorios }) {
     if (!window.confirm(`Deseja desativar ${nomeUsuario}?`)) return;
 
     try {
-      const response = await fetch(`https://192.167.2.41:3001/api/usuarios/${id}`, {
+      const response = await fetch(`http://192.167.2.41:3001/api/usuarios/${id}`, {
         method: 'DELETE',
       });
 

@@ -21,7 +21,7 @@ export default function PainelRecepcao({ usuario, onLogout }) {
 
   const buscarEstatisticas = async () => {
     try {
-      const response = await fetch('https://192.167.2.41:3001/api/relatorios/dia');
+      const response = await fetch('http://192.167.2.41:3001/api/relatorios/dia');
       const data = await response.json();
       setEstatisticas(data);
     } catch (error) {
@@ -36,7 +36,7 @@ export default function PainelRecepcao({ usuario, onLogout }) {
     if (cpfLimpo.length !== 11) return;
 
     try {
-      const response = await fetch(`https://192.167.2.41:3001/api/visitantes/${cpfLimpo}`);
+      const response = await fetch(`http://192.167.2.41:3001/api/visitantes/${cpfLimpo}`);
       
       if (response.ok) {
         const data = await response.json();
@@ -64,7 +64,7 @@ export default function PainelRecepcao({ usuario, onLogout }) {
     setCarregando(true);
 
     try {
-      const response = await fetch('https://192.167.2.41:3001/api/visitas', {
+      const response = await fetch('http://192.167.2.41:3001/api/visitas', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

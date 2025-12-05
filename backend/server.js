@@ -1,17 +1,14 @@
 // ============================================
 // SERVER.JS - Sistema de Recepção Empresarial
-// Backend: Node.js + Express + MySQL + HTTPS
+// Backend: Node.js + Express + MySQL + HTTP
 // Fluxo: aguardando → chamado → finalizado
-// VERSÃO COM SUPORTE HTTPS
+// VERSÃO HTTP
 // ============================================
 
 const express = require('express');
 const cors = require('cors');
 const mysql = require('mysql2/promise');
 const bcrypt = require('bcrypt');
-const https = require('https');
-const fs = require('fs');
-const path = require('path');
 
 const app = express();
 const port = 3001;
@@ -316,8 +313,6 @@ app.get('/api/visitas/aguardando/:departamento_id', async (req, res) => {
 
 app.get('/api/visitas/chamados/:departamento_id', async (req, res) => {
   const { departamento_id } = req.params;
-  
-  // console.log(`📋 Buscando visitantes em atendimento do departamento ${departamento_id}`);
   
   try {
     const [rows] = await pool.query(
@@ -1085,64 +1080,22 @@ app.use((req, res) => {
 });
 
 // ============================================
-// CONFIGURAÇÃO HTTPS
+// INICIALIZAÇÃO DO SERVIDOR HTTP
 // ============================================
-function iniciarServidor() {
-  const certPath = path.join(__dirname, 'ssl', 'server.cert');
-  const keyPath = path.join(__dirname, 'ssl', 'server.key');
-
-  // Verifica se os certificados existem
-  if (fs.existsSync(certPath) && fs.existsSync(keyPath)) {
-    // Modo HTTPS
-    const httpsOptions = {
-      key: fs.readFileSync(keyPath),
-      cert: fs.readFileSync(certPath)
-    };
-
-    https.createServer(httpsOptions, app).listen(port, '0.0.0.0', async () => {
-      console.log('================================================');
-      console.log('🚀 SISTEMA DE RECEPÇÃO EMPRESARIAL');
-      console.log('   VERSÃO HTTPS ATIVADA 🔒');
-      console.log('================================================');
-      console.log(`✅ Servidor HTTPS rodando em https://192.167.2.41:${port}`);
-      console.log(`⏰ Iniciado em: ${new Date().toLocaleString('pt-BR')}`);
-      
-      try {
-        await pool.query('SELECT 1');
-        console.log('✅ Banco de dados conectado');
-        console.log('✅ bcrypt habilitado para validação de senhas');
-        console.log('🔒 Certificados SSL carregados com sucesso');
-      } catch (err) {
-        console.error('❌ Erro ao conectar ao banco:', err.message);
-      }
-    });
-  } else {
-    // Modo HTTP (fallback)
-    console.log('⚠️  AVISO: Certificados SSL não encontrados');
-    console.log('⚠️  Rodando em modo HTTP (não seguro)');
-    console.log('⚠️  Para usar HTTPS, execute: npm run generate-cert');
-    console.log('');
-    
-    app.listen(port, '0.0.0.0', async () => {
-      console.log('================================================');
-      console.log('🚀 SISTEMA DE RECEPÇÃO EMPRESARIAL');
-      console.log('   VERSÃO HTTP (NÃO SEGURO)');
-      console.log('================================================');
-      console.log(`✅ Servidor HTTP rodando em http://192.167.2.41:${port}`);
-      console.log(`⏰ Iniciado em: ${new Date().toLocaleString('pt-BR')}`);
-      
-      try {
-        await pool.query('SELECT 1');
-        console.log('✅ Banco de dados conectado');
-        console.log('✅ bcrypt habilitado para validação de senhas');
-      } catch (err) {
-        console.error('❌ Erro ao conectar ao banco:', err.message);
-      }
-    });
+app.listen(port, '0.0.0.0', async () => {
+  console.log('================================================');
+  console.log('🚀 SISTEMA DE RECEPÇÃO EMPRESARIAL');
+  console.log('   VERSÃO HTTP');
+  console.log('================================================');
+  console.log(`✅ Servidor HTTP rodando em http://192.167.2.41:${port}`);
+  console.log(`⏰ Iniciado em: ${new Date().toLocaleString('pt-BR')}`);
+  
+  try {
+    await pool.query('SELECT 1');
+    console.log('✅ Banco de dados conectado');
+    console.log('✅ bcrypt habilitado para validação de senhas');
+    console.log('================================================');
+  } catch (err) {
+    console.error('❌ Erro ao conectar ao banco:', err.message);
   }
-}
-
-// ============================================
-// INICIALIZAÇÃO
-// ============================================
-iniciarServidor();
+});

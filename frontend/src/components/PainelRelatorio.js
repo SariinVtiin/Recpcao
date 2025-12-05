@@ -29,7 +29,7 @@ export default function PainelRelatorio({ onVoltar }) {
 
   const buscarDepartamentos = async () => {
     try {
-      const response = await fetch('https://192.167.2.41:3001/api/departamentos');
+      const response = await fetch('http://192.167.2.41:3001/api/departamentos');
       const data = await response.json();
       setDepartamentos(data);
     } catch (error) {
@@ -82,7 +82,7 @@ export default function PainelRelatorio({ onVoltar }) {
 
     setCarregando(true);
     try {
-      let urlVisitas = `https://192.167.2.41:3001/api/relatorios/visitas?data_inicio=${inicio}&data_fim=${fim}`;
+      let urlVisitas = `http://192.167.2.41:3001/api/relatorios/visitas?data_inicio=${inicio}&data_fim=${fim}`;
       if (depto && depto !== 'todos') {
         urlVisitas += `&departamento_id=${depto}`;
       }
@@ -99,7 +99,7 @@ export default function PainelRelatorio({ onVoltar }) {
       
       setVisitas(dataVisitas);
 
-      let urlStats = `https://192.167.2.41:3001/api/relatorios/estatisticas?data_inicio=${inicio}&data_fim=${fim}`;
+      let urlStats = `http://192.167.2.41:3001/api/relatorios/estatisticas?data_inicio=${inicio}&data_fim=${fim}`;
       if (depto && depto !== 'todos') {
         urlStats += `&departamento_id=${depto}`;
       }
