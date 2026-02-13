@@ -11,11 +11,10 @@ import PainelTV from './components/PainelTV';
 
 export default function App() {
   const [usuarioLogado, setUsuarioLogado] = useState(null);
-  const [telaAtual, setTelaAtual] = useState('login'); // Controla qual tela mostrar
+  const [telaAtual, setTelaAtual] = useState('login');
 
   const handleLogin = (usuario) => {
     setUsuarioLogado(usuario);
-    console.log('Usuário logado:', usuario);
     
     // Define tela inicial baseada no perfil
     switch (usuario.perfil) {
@@ -30,6 +29,9 @@ export default function App() {
         break;
       case 'painel':
         setTelaAtual('tv');
+        break;
+      case 'relatorio':  // CORRIGIDO: singular como está no BD
+        setTelaAtual('relatorios');
         break;
       default:
         setTelaAtual('login');
@@ -46,7 +48,13 @@ export default function App() {
   };
 
   const handleVoltarParaAdmin = () => {
-    setTelaAtual('admin');
+    if (usuarioLogado?.perfil === 'administrador') {
+      setTelaAtual('admin');
+    } else if (usuarioLogado?.perfil === 'relatorio') {  // CORRIGIDO: singular
+      handleLogout();
+    } else {
+      handleLogout();
+    }
   };
 
   // Renderização baseada na tela atual

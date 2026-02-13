@@ -15,7 +15,6 @@
 .painel-recepcao-background {
   position: absolute;
   inset: 0;
-  background-image: url('C:\Users\jonathan01062\Documents\CODE\Nova pasta\Nova pasta\Recpcao\frontend\src\assets\confederal.png');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -642,6 +641,65 @@
   .painel-recepcao-card {
     box-shadow: none;
     border: 1px solid #e5e7eb;
+  }
+}
+
+/* ============================================
+   RODAPÉ - INFORMAÇÕES DO DESENVOLVEDOR
+   ============================================ */
+
+.painel-admin-footer {
+  text-align: center;
+  padding: 1.5rem 1rem;
+  margin-top: 2rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  border-radius: 0.5rem;
+}
+
+.painel-admin-footer p {
+  margin: 0.25rem 0;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.painel-admin-footer p:first-child {
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.875rem;
+}
+
+.painel-admin-footer p:last-child {
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* Responsividade do Rodapé */
+@media (max-width: 768px) {
+  .painel-admin-footer {
+    padding: 1.25rem 0.75rem;
+    margin-top: 1.5rem;
+    font-size: 0.75rem;
+  }
+
+  .painel-admin-footer p:first-child {
+    font-size: 0.8125rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .painel-admin-footer {
+    padding: 1rem 0.5rem;
+    font-size: 0.6875rem;
+    line-height: 1.5;
+  }
+
+  .painel-admin-footer p:first-child {
+    font-size: 0.75rem;
   }
 }
 

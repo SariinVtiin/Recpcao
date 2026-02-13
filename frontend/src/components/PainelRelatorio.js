@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart3, Download, FileDown, Filter, ArrowLeft } from 'lucide-react';
 import './PainelRelatorio.css';
+import confederal from '../assets/confederal.png';
 
-export default function PainelRelatorio({ onVoltar }) {
+
+export default function PainelRelatorio({ usuario, onVoltar }) {  // ADICIONAR usuario AQUI
   const [visitas, setVisitas] = useState([]);
   const [estatisticas, setEstatisticas] = useState({
     total_visitas: 0,
@@ -22,14 +24,31 @@ export default function PainelRelatorio({ onVoltar }) {
   const [departamentos, setDepartamentos] = useState([]);
   const [filtroAtivo, setFiltroAtivo] = useState('hoje');
 
+  // Função para obter o label do perfil
+  const getPerfilLabel = () => {
+    const perfis = {
+      administrador: 'Administrador',
+      relatorio: 'Analista de Relatórios'
+    };
+    return perfis[usuario?.perfil] || 'Usuário';
+  };
+
+  // useEffect com validação de acesso
   useEffect(() => {
+    // Validação de acesso
+    if (usuario && usuario.perfil !== 'administrador' && usuario.perfil !== 'relatorio') {
+      alert('⚠️ Acesso negado! Você não tem permissão para acessar relatórios.');
+      onVoltar();
+      return;
+    }
+    
     buscarDepartamentos();
     aplicarFiltroRapido('hoje');
   }, []);
 
   const buscarDepartamentos = async () => {
     try {
-      const response = await fetch('http://192.167.2.41:3001/api/departamentos');
+      const response = await fetch('http://192.167.1.255:3001/api/departamentos');
       const data = await response.json();
       setDepartamentos(data);
     } catch (error) {
@@ -82,7 +101,7 @@ export default function PainelRelatorio({ onVoltar }) {
 
     setCarregando(true);
     try {
-      let urlVisitas = `http://192.167.2.41:3001/api/relatorios/visitas?data_inicio=${inicio}&data_fim=${fim}`;
+      let urlVisitas = `http://192.167.1.255:3001/api/relatorios/visitas?data_inicio=${inicio}&data_fim=${fim}`;
       if (depto && depto !== 'todos') {
         urlVisitas += `&departamento_id=${depto}`;
       }
@@ -93,13 +112,9 @@ export default function PainelRelatorio({ onVoltar }) {
       const resVisitas = await fetch(urlVisitas);
       const dataVisitas = await resVisitas.json();
       
-      console.log('=== DADOS RECEBIDOS DO BACKEND ===');
-      console.log('Primeira visita:', dataVisitas[0]);
-      console.log('Campos disponíveis:', dataVisitas[0] ? Object.keys(dataVisitas[0]) : 'Nenhum dado');
-      
       setVisitas(dataVisitas);
 
-      let urlStats = `http://192.167.2.41:3001/api/relatorios/estatisticas?data_inicio=${inicio}&data_fim=${fim}`;
+      let urlStats = `http://192.167.1.255:3001/api/relatorios/estatisticas?data_inicio=${inicio}&data_fim=${fim}`;
       if (depto && depto !== 'todos') {
         urlStats += `&departamento_id=${depto}`;
       }
@@ -262,24 +277,21 @@ export default function PainelRelatorio({ onVoltar }) {
       finalizado: visitas.filter(v => v.status === 'finalizado').length
     };
 
-    // HEADERS: DATA ANTES DE HORA CHEGADA + TEMPO TOTAL
     const headers = [
       'ID',
-      'Visitante',
+      'VISITANTE',
       'CPF',
-      'Matrícula',
-      'Motivo',
-      'Departamento',
-      'Responsável',
-      'Data',
-      'Hora Chegada',
-      'Hora Chamada',
-      'Hora Saída',
-      'Tempo Total',       // ← NOVA COLUNA
-      'Status'
+      'MATRÍCULA',
+      'MOTIVO',
+      'SETOR',
+      'RESPONSAVEL',
+      'DATA',
+      'Hr-Chegada',
+      'Hr-Chamada',
+      'Hr-Saída',
+      'TEMPO TOTAL',
     ];
 
-    // ROWS: DATA ANTES DE HORA CHEGADA + TEMPO TOTAL
     const rows = visitas.map(v => {
       const horaChegada = obterCampo(v, 'hora_chegada', 'data_entrada', 'data_chegada', 'created_at');
       const horaChamada = obterCampo(v, 'hora_chamada', 'data_chamada', 'chamado_em');
@@ -293,12 +305,11 @@ export default function PainelRelatorio({ onVoltar }) {
         v.motivo || '-',
         v.departamento_nome || '-',
         v.responsavel_nome || '-',
-        formatarData(horaChegada),           // Data
-        formatarHora(horaChegada),           // Hora Chegada
-        formatarHora(horaChamada),           // Hora Chamada
-        formatarHora(horaSaida),             // Hora Saída
-        calcularTempoTotal(horaChegada, horaSaida),  // Tempo Total
-        getStatusLabel(v.status)
+        formatarData(horaChegada),
+        formatarHora(horaChegada),
+        formatarHora(horaChamada),
+        formatarHora(horaSaida),
+        calcularTempoTotal(horaChegada, horaSaida),
       ];
     });
 
@@ -479,7 +490,9 @@ export default function PainelRelatorio({ onVoltar }) {
 
   return (
     <div className="painel-relatorio">
-      <div className="relatorio-background"></div>
+      <div className="relatorio-background"
+        style={{ backgroundImage: `url(${confederal})` }}
+      ></div>
       <div className="relatorio-overlay"></div>
       
       <div className="relatorio-content">
@@ -492,7 +505,7 @@ export default function PainelRelatorio({ onVoltar }) {
               </div>
               <div className="header-info">
                 <h1>Relatórios e Estatísticas</h1>
-                <p>Administrador • Análise de Visitas</p>
+                <p>{getPerfilLabel()} • Análise de Visitas</p>
               </div>
             </div>
             <button className="btn-voltar" onClick={onVoltar}>
@@ -651,7 +664,6 @@ export default function PainelRelatorio({ onVoltar }) {
             </div>
           </div>
 
-          {/* TABELA: UMA COLUNA DE DATA + TRÊS COLUNAS DE HORA */}
           <div className="tabela-container">
             <h3>Detalhamento de Visitas</h3>
             
@@ -715,6 +727,10 @@ export default function PainelRelatorio({ onVoltar }) {
             )}
           </div>
           
+        </div>
+        <div className="painel-admin-footer">
+          <p>Sistema de Recepção - Máxima Facility | Confederal</p>
+          <p>© 2026 • Desenvolvido por Jonathan Almeida Vieira • TI</p>
         </div>
       </div>
     </div>

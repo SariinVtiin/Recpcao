@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { User, Lock, AlertCircle, LogIn, Building2 } from 'lucide-react';
 import './TelaLogin.css';
+import confederal from '../assets/confederal.png';
 
 export default function TelaLogin({ onLogin }) {
   const [usuario, setUsuario] = useState('');
@@ -20,11 +21,12 @@ export default function TelaLogin({ onLogin }) {
     setCarregando(true);
 
     try {
-      const response = await fetch('http://192.167.2.41:3001/api/auth/login', {
+      const response = await fetch('http://192.167.1.255:3001/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ usuario: usuario.trim(), senha: senha.trim() }),
       });
+
 
       const data = await response.json();
 
@@ -48,7 +50,8 @@ export default function TelaLogin({ onLogin }) {
   return (
     <div className="tela-login-container">
       {/* Fundo com Imagem */}
-      <div className="tela-login-background"></div>
+      <div className="tela-login-background"
+       style={{ backgroundImage: `url(${confederal})` }}></div>
       
       {/* Overlay Gradiente */}
       <div className="tela-login-overlay"></div>
@@ -132,6 +135,10 @@ export default function TelaLogin({ onLogin }) {
               </>
             )}
           </button>
+        </div>
+        <div className="painel-admin-footer">
+          <p>Sistema de Recepção - Máxima Facility | Confederal</p>
+          <p>© 2026 • Desenvolvido por Jonathan Almeida Vieira • TI</p>
         </div>
       </div>
     </div>

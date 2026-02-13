@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Building2, LogOut, Clock, UserCheck, CheckCircle } from 'lucide-react';
 import './PainelDepartamento.css';
+import confederal from '../assets/confederal.png';
 
 export default function PainelDepartamento({ usuario, onLogout }) {
   const [visitasAguardando, setVisitasAguardando] = useState([]);
@@ -15,8 +16,8 @@ export default function PainelDepartamento({ usuario, onLogout }) {
   const ultimaQuantidadeRef = useRef(0);
   const primeiraCarregaRef = useRef(true);
 
-  // Constante de tempo mínimo de atendimento (1min = 60 segundos)
-  const TEMPO_MINIMO_ATENDIMENTO = 60 * 1000; // 60 segundos em milissegundos
+  // Constante de tempo mínimo de atendimento (1min = 60 segundos)\\
+  const TEMPO_MINIMO_ATENDIMENTO = 30 * 1000; // 30 segundos em milissegundos
 
   // Solicitar permissão de notificações
   useEffect(() => {
@@ -160,7 +161,7 @@ export default function PainelDepartamento({ usuario, onLogout }) {
   const buscarAguardando = useCallback(async () => {
     try {
       const response = await fetch(
-        `http://192.167.2.41:3001/api/visitas/aguardando/${usuario.departamento_id}`
+        `http://192.167.1.255:3001/api/visitas/aguardando/${usuario.departamento_id}`
       );
       const data = await response.json();
 
@@ -218,7 +219,7 @@ export default function PainelDepartamento({ usuario, onLogout }) {
   const buscarChamados = useCallback(async () => {
     try {
       const response = await fetch(
-        `http://192.167.2.41:3001/api/visitas/chamados/${usuario.departamento_id}`
+        `http://192.167.1.255:3001/api/visitas/chamados/${usuario.departamento_id}`
       );
       const data = await response.json();
 
@@ -254,7 +255,7 @@ export default function PainelDepartamento({ usuario, onLogout }) {
   const buscarFinalizados = useCallback(async () => {
     try {
       const response = await fetch(
-        `http://192.167.2.41:3001/api/visitas?departamento_id=${usuario.departamento_id}&status=finalizado`
+        `http://192.167.1.255:3001/api/visitas?departamento_id=${usuario.departamento_id}&status=finalizado`
       );
       const data = await response.json();
       
@@ -303,7 +304,7 @@ export default function PainelDepartamento({ usuario, onLogout }) {
     setCarregando(true);
     try {
       const response = await fetch(
-        `http://192.167.2.41:3001/api/visitas/${visitaId}/chamar`,
+        `http://192.167.1.255:3001/api/visitas/${visitaId}/chamar`,
         { 
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
@@ -352,7 +353,7 @@ export default function PainelDepartamento({ usuario, onLogout }) {
     setCarregando(true);
     try {
       const response = await fetch(
-        `http://192.167.2.41:3001/api/visitas/${visitaId}/finalizado`,
+        `http://192.167.1.255:3001/api/visitas/${visitaId}/finalizado`,
         { method: 'PUT' }
       );
 
@@ -408,7 +409,9 @@ export default function PainelDepartamento({ usuario, onLogout }) {
 
   return (
     <div className="painel-dept-container">
-      <div className="painel-dept-background"></div>
+      <div className="painel-dept-background"
+        style={{ backgroundImage: `url(${confederal})` }}
+      ></div>
       <div className="painel-dept-overlay"></div>
 
       <div className="painel-dept-content">
@@ -662,6 +665,10 @@ export default function PainelDepartamento({ usuario, onLogout }) {
               </div>
             </div>
           </div>
+        </div>
+        <div className="painel-admin-footer">
+          <p>Sistema de Recepção - Máxima Facility | Confederal</p>
+          <p>© 2026 • Desenvolvido por Jonathan Almeida Vieira • TI</p>
         </div>
       </div>
     </div>

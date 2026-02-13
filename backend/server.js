@@ -224,9 +224,6 @@ app.post('/api/visitas', async (req, res) => {
       'SELECT * FROM visitas_completas WHERE visita_id = ?',
       [ids[0].visita_id]
     );
-
-    console.log(`Nova visita registrada: ${nome} -> ${visita[0].departamento_nome}`);
-
     res.status(201).json(visita[0]);
   } catch (err) {
     console.error('Erro ao registrar visita:', err);
@@ -322,10 +319,7 @@ app.get('/api/visitas/chamados/:departamento_id', async (req, res) => {
        AND DATE(hora_chegada) = CURDATE()
        ORDER BY hora_chamada DESC`,
       [departamento_id]
-    );
-    
-    console.log(`✅ ${rows.length} visitante(s) em atendimento encontrado(s)`);
-    
+    );    
     res.json(rows);
   } catch (err) {
     console.error('❌ Erro ao listar chamados:', err);
@@ -534,14 +528,14 @@ app.get('/api/usuarios/:id', async (req, res) => {
 
 app.post('/api/usuarios', async (req, res) => {
   const { nome, login, senha, perfil, departamento_id } = req.body;
-
   if (!nome || !login || !senha || !perfil) {
     return res.status(400).json({ 
       error: 'Nome, login, senha e perfil são obrigatórios' 
     });
   }
 
-  const perfisValidos = ['recepcionista', 'departamento', 'painel', 'administrador'];
+  // ✅ CORRIGIDO: Adicionado 'relatorio' na lista
+  const perfisValidos = ['recepcionista', 'departamento', 'painel', 'administrador', 'relatorio'];
   if (!perfisValidos.includes(perfil)) {
     return res.status(400).json({ error: 'Perfil inválido' });
   }
@@ -876,9 +870,7 @@ app.get('/api/relatorios/periodo', async (req, res) => {
 
 app.get('/api/relatorios/visitas', async (req, res) => {
   const { data_inicio, data_fim, departamento_id, status } = req.query;
-  
-  console.log('📊 Buscando relatório de visitas:', { data_inicio, data_fim, departamento_id, status });
-  
+    
   if (!data_inicio || !data_fim) {
     return res.status(400).json({ 
       error: 'data_inicio e data_fim são obrigatórios' 
@@ -926,8 +918,6 @@ app.get('/api/relatorios/visitas', async (req, res) => {
 
     const [visitas] = await pool.query(query, params);
     
-    console.log(`✅ ${visitas.length} visita(s) encontrada(s)`);
-    
     res.json(visitas);
   } catch (err) {
     console.error('❌ Erro ao buscar relatório de visitas:', err);
@@ -937,8 +927,6 @@ app.get('/api/relatorios/visitas', async (req, res) => {
 
 app.get('/api/relatorios/estatisticas', async (req, res) => {
   const { data_inicio, data_fim, departamento_id, status } = req.query;
-  
-  console.log('📈 Buscando estatísticas:', { data_inicio, data_fim, departamento_id, status });
   
   if (!data_inicio || !data_fim) {
     return res.status(400).json({ 
@@ -993,7 +981,7 @@ app.get('/api/relatorios/estatisticas', async (req, res) => {
         : '0 min'
     };
 
-    console.log('✅ Estatísticas calculadas:', resultado);
+
     
     res.json(resultado);
   } catch (err) {
@@ -1058,10 +1046,7 @@ app.get('/api/visitas/chamadas-recentes', async (req, res) => {
         AND v.hora_chamada IS NOT NULL
         AND v.hora_chamada >= NOW() - INTERVAL 2 MINUTE
       ORDER BY v.hora_chamada ASC
-    `);
-    
-    console.log(`📞 ${chamadas.length} chamada(s) recente(s) encontrada(s)`);
-    
+    `);    
     res.json(chamadas);
   } catch (error) {
     console.error('Erro ao buscar chamadas recentes:', error);
@@ -1087,7 +1072,7 @@ app.listen(port, '0.0.0.0', async () => {
   console.log('🚀 SISTEMA DE RECEPÇÃO EMPRESARIAL');
   console.log('   VERSÃO HTTP');
   console.log('================================================');
-  console.log(`✅ Servidor HTTP rodando em http://192.167.2.41:${port}`);
+  console.log(`✅ Servidor HTTP rodando`);
   console.log(`⏰ Iniciado em: ${new Date().toLocaleString('pt-BR')}`);
   
   try {

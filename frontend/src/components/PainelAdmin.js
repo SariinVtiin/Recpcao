@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Shield, LogOut, UserPlus, Edit2, Trash2, Eye, EyeOff, Check, X, BarChart3, Search } from 'lucide-react';
 import './PainelAdmin.css';
+import confederal from '../assets/confederal.png';
+
 
 export default function PainelAdmin({ usuario, onLogout, onAbrirRelatorios }) {
   const [usuarios, setUsuarios] = useState([]);
@@ -25,7 +27,7 @@ export default function PainelAdmin({ usuario, onLogout, onAbrirRelatorios }) {
 
   const buscarUsuarios = async () => {
     try {
-      const response = await fetch('http://192.167.2.41:3001/api/usuarios');
+      const response = await fetch('http://192.167.1.255:3001/api/usuarios');
       if (!response.ok) throw new Error('Erro ao buscar usuários');
       const data = await response.json();
       setUsuarios(Array.isArray(data) ? data : []);
@@ -39,7 +41,7 @@ export default function PainelAdmin({ usuario, onLogout, onAbrirRelatorios }) {
 
   const buscarDepartamentos = async () => {
     try {
-      const response = await fetch('http://192.167.2.41:3001/api/departamentos');
+      const response = await fetch('http://192.167.1.255:3001/api/departamentos');
       const data = await response.json();
       setDepartamentos(data);
     } catch (error) {
@@ -87,14 +89,14 @@ export default function PainelAdmin({ usuario, onLogout, onAbrirRelatorios }) {
 
       let response;
       if (editando) {
-        response = await fetch(`http://192.167.2.41:3001/api/usuarios/${editando}`, {
+        response = await fetch(`http://192.167.1.255:3001/api/usuarios/${editando}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(dados),
         });
       } else {
         dados.senha = senha.trim();
-        response = await fetch('http://192.167.2.41:3001/api/usuarios', {
+        response = await fetch('http://192.167.1.255:3001/api/usuarios', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(dados),
@@ -124,7 +126,7 @@ export default function PainelAdmin({ usuario, onLogout, onAbrirRelatorios }) {
     if (!window.confirm(`Deseja desativar ${nomeUsuario}?`)) return;
 
     try {
-      const response = await fetch(`http://192.167.2.41:3001/api/usuarios/${id}`, {
+      const response = await fetch(`http://192.167.1.255:3001/api/usuarios/${id}`, {
         method: 'DELETE',
       });
 
@@ -144,15 +146,16 @@ export default function PainelAdmin({ usuario, onLogout, onAbrirRelatorios }) {
     }
   };
 
-  const getPerfilInfo = (perfil) => {
-    const perfis = {
-      administrador: { label: 'Administrador', classe: 'admin', icone: '👑' },
-      recepcionista: { label: 'Recepcionista', classe: 'receptionist', icone: '👤' },
-      departamento: { label: 'Departamento', classe: 'department', icone: '🏢' },
-      painel: { label: 'Painel TV', classe: 'panel', icone: '📺' }
-    };
-    return perfis[perfil] || perfis.recepcionista;
+const getPerfilInfo = (perfil) => {
+  const perfis = {
+    administrador: { label: 'Administrador', classe: 'admin', icone: '👑' },
+    recepcionista: { label: 'Recepcionista', classe: 'receptionist', icone: '👤' },
+    departamento: { label: 'Departamento', classe: 'department', icone: '🏢' },
+    painel: { label: 'Painel TV', classe: 'panel', icone: '📺' },
+    relatorio: { label: 'Relatórios', classe: 'reports', icone: '📊' }  // SINGULAR
   };
+  return perfis[perfil] || perfis.recepcionista;
+};
 
   // Filtrar usuários com base na pesquisa
   const usuariosFiltrados = usuarios
@@ -179,7 +182,9 @@ export default function PainelAdmin({ usuario, onLogout, onAbrirRelatorios }) {
 
   return (
     <div className="painel-admin-container">
-      <div className="painel-admin-background"></div>
+      <div className="painel-admin-background"
+        style={{ backgroundImage: `url(${confederal})` }}
+      ></div>
       <div className="painel-admin-overlay"></div>
 
       <div className="painel-admin-content">
@@ -274,16 +279,17 @@ export default function PainelAdmin({ usuario, onLogout, onAbrirRelatorios }) {
 
                 <div className="painel-admin-form-group">
                   <label className="painel-admin-form-label">Perfil de Acesso *</label>
-                  <select
-                    value={perfil}
-                    onChange={(e) => setPerfil(e.target.value)}
-                    className="painel-admin-form-select"
-                  >
-                    <option value="administrador">👑 Administrador</option>
-                    <option value="recepcionista">👤 Recepcionista</option>
-                    <option value="departamento">🏢 Departamento</option>
-                    <option value="painel">📺 Painel TV</option>
-                  </select>
+                <select
+                  value={perfil}
+                  onChange={(e) => setPerfil(e.target.value)}
+                  className="painel-admin-form-select"
+                >
+                  <option value="administrador">👑 Administrador</option>
+                  <option value="recepcionista">👤 Recepcionista</option>
+                  <option value="departamento">🏢 Departamento</option>
+                  <option value="painel">📺 Painel TV</option>
+                  <option value="relatorio">📊 Relatórios</option>  {/* SINGULAR */}
+                </select>
                 </div>
 
                 {perfil === 'departamento' && (
@@ -419,6 +425,12 @@ export default function PainelAdmin({ usuario, onLogout, onAbrirRelatorios }) {
               <p>Nenhum usuário cadastrado</p>
             </div>
           )}
+        </div>
+        
+        {/* Rodapé com informações do desenvolvedor */}
+        <div className="painel-admin-footer">
+          <p>Sistema de Recepção - Máxima Facility | Confederal</p>
+          <p>© 2026 • Desenvolvido por Jonathan Almeida Vieira • TI</p>
         </div>
       </div>
     </div>
