@@ -1,22 +1,54 @@
 import React, { useState, useEffect } from 'react';
-import { BarChart3, Download, FileDown, Filter, ArrowLeft } from 'lucide-react';
+import { BarChart3, Download, FileDown, ArrowLeft, Columns } from 'lucide-react';
 import './PainelRelatorio.css';
 import confederal from '../assets/confederal.png';
 
+const API = 'http://192.167.1.255:3001';
 
-export default function PainelRelatorio({ usuario, onVoltar }) {  // ADICIONAR usuario AQUI
+// ============================================================
+// Definição de todas as colunas disponíveis
+// ============================================================
+const TODAS_COLUNAS = [
+  { key: 'nome',         label: 'VISITANTE',    excelLabel: 'VISITANTE'    },
+  { key: 'matricula',    label: 'MATRÍCULA',    excelLabel: 'MATRÍCULA'    },
+  { key: 'motivo',       label: 'MOTIVO',       excelLabel: 'MOTIVO'       },
+  { key: 'departamento', label: 'DEPARTAMENTO', excelLabel: 'SETOR'        },
+  { key: 'cadastrado',   label: 'CADASTRADO',   excelLabel: 'CADASTRADO'   },
+  { key: 'chamado',      label: 'CHAMADO',      excelLabel: 'CHAMADO'      },
+  { key: 'finalizado',   label: 'FINALIZADO',   excelLabel: 'FINALIZADO'   },
+  { key: 'data',         label: 'DATA',         excelLabel: 'DATA'         },
+  { key: 'hrChegada',    label: 'HR CHEGADA',   excelLabel: 'Hr-Chegada'   },
+  { key: 'hrChamada',    label: 'HR CHAMADA',   excelLabel: 'Hr-Chamada'   },
+  { key: 'hrSaida',      label: 'HR SAÍDA',     excelLabel: 'Hr-Saída'     },
+  { key: 'tempoTotal',   label: 'TEMPO TOTAL',  excelLabel: 'TEMPO TOTAL'  },
+  { key: 'status',       label: 'STATUS',       excelLabel: 'STATUS'       },
+];
+
+// ============================================================
+// Presets de colunas
+// ============================================================
+const PRESETS = {
+  completo: {
+    label: 'Completo',
+    descricao: 'Todas as colunas',
+    colunas: TODAS_COLUNAS.map(c => c.key)
+  },
+  analise: {
+    label: 'Análise',
+    descricao: 'Foco em tempo e responsáveis',
+    colunas: ['nome', 'matricula', 'motivo', 'departamento', 'chamado', 'finalizado', 'data', 'hrChegada', 'hrSaida', 'tempoTotal']
+  }
+};
+
+const presetInicial = TODAS_COLUNAS.reduce((acc, c) => ({ ...acc, [c.key]: true }), {});
+
+export default function PainelRelatorio({ usuario, onVoltar }) {
   const [visitas, setVisitas] = useState([]);
   const [estatisticas, setEstatisticas] = useState({
-    total_visitas: 0,
-    aguardando: 0,
-    em_atendimento: 0,
-    finalizados: 0,
-    tempo_medio_espera: '0 min',
-    tempo_medio_atendimento: '0 min'
+    total_visitas: 0, aguardando: 0, em_atendimento: 0, finalizados: 0,
+    tempo_medio_espera: '0 min', tempo_medio_atendimento: '0 min'
   });
   const [carregando, setCarregando] = useState(false);
-  
-  // Filtros
   const [dataInicio, setDataInicio] = useState('');
   const [dataFim, setDataFim] = useState('');
   const [departamentoFiltro, setDepartamentoFiltro] = useState('todos');
@@ -24,701 +56,357 @@ export default function PainelRelatorio({ usuario, onVoltar }) {  // ADICIONAR u
   const [departamentos, setDepartamentos] = useState([]);
   const [filtroAtivo, setFiltroAtivo] = useState('hoje');
 
-  // Função para obter o label do perfil
+  // Estado de colunas
+  const [colunasSelecionadas, setColunasSelecionadas] = useState(presetInicial);
+  const [presetAtivo, setPresetAtivo] = useState('completo');
+  const [mostrarSeletor, setMostrarSeletor] = useState(false);
+
   const getPerfilLabel = () => {
-    const perfis = {
-      administrador: 'Administrador',
-      relatorio: 'Analista de Relatórios'
-    };
+    const perfis = { administrador: 'Administrador', relatorio: 'Analista de Relatórios' };
     return perfis[usuario?.perfil] || 'Usuário';
   };
 
-  // useEffect com validação de acesso
   useEffect(() => {
-    // Validação de acesso
     if (usuario && usuario.perfil !== 'administrador' && usuario.perfil !== 'relatorio') {
-      alert('⚠️ Acesso negado! Você não tem permissão para acessar relatórios.');
+      alert('⚠️ Acesso negado!');
       onVoltar();
       return;
     }
-    
     buscarDepartamentos();
     aplicarFiltroRapido('hoje');
   }, []);
 
   const buscarDepartamentos = async () => {
     try {
-      const response = await fetch('http://192.167.1.255:3001/api/departamentos');
-      const data = await response.json();
-      setDepartamentos(data);
-    } catch (error) {
-      console.error('Erro ao buscar departamentos:', error);
-    }
+      const r = await fetch(`${API}/api/departamentos`);
+      setDepartamentos(await r.json());
+    } catch (e) { console.error(e); }
   };
 
   const aplicarFiltroRapido = (periodo) => {
     const hoje = new Date();
     let inicio, fim;
-
     switch (periodo) {
-      case 'hoje':
-        inicio = fim = hoje.toISOString().split('T')[0];
-        break;
-      case 'ontem':
-        const ontem = new Date(hoje);
-        ontem.setDate(ontem.getDate() - 1);
-        inicio = fim = ontem.toISOString().split('T')[0];
-        break;
-      case 'semana':
-        const inicioSemana = new Date(hoje);
-        inicioSemana.setDate(hoje.getDate() - hoje.getDay());
-        inicio = inicioSemana.toISOString().split('T')[0];
-        fim = hoje.toISOString().split('T')[0];
-        break;
-      case 'mes':
-        inicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString().split('T')[0];
-        fim = hoje.toISOString().split('T')[0];
-        break;
-      case 'ano':
-        inicio = new Date(hoje.getFullYear(), 0, 1).toISOString().split('T')[0];
-        fim = hoje.toISOString().split('T')[0];
-        break;
-      default:
-        return;
+      case 'hoje':   inicio = fim = hoje.toISOString().split('T')[0]; break;
+      case 'ontem':  const on = new Date(hoje); on.setDate(on.getDate()-1); inicio = fim = on.toISOString().split('T')[0]; break;
+      case 'semana': const is = new Date(hoje); is.setDate(hoje.getDate()-hoje.getDay()); inicio = is.toISOString().split('T')[0]; fim = hoje.toISOString().split('T')[0]; break;
+      case 'mes':    inicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString().split('T')[0]; fim = hoje.toISOString().split('T')[0]; break;
+      case 'ano':    inicio = new Date(hoje.getFullYear(), 0, 1).toISOString().split('T')[0]; fim = hoje.toISOString().split('T')[0]; break;
+      default: return;
     }
-
-    setDataInicio(inicio);
-    setDataFim(fim);
-    setFiltroAtivo(periodo);
+    setDataInicio(inicio); setDataFim(fim); setFiltroAtivo(periodo);
     buscarRelatorios(inicio, fim, departamentoFiltro, statusFiltro);
   };
 
   const buscarRelatorios = async (inicio, fim, depto, status) => {
-    if (!inicio || !fim) {
-      console.log('Datas não definidas');
-      return;
-    }
-
+    if (!inicio || !fim) return;
     setCarregando(true);
     try {
-      let urlVisitas = `http://192.167.1.255:3001/api/relatorios/visitas?data_inicio=${inicio}&data_fim=${fim}`;
-      if (depto && depto !== 'todos') {
-        urlVisitas += `&departamento_id=${depto}`;
-      }
-      if (status && status !== 'todos') {
-        urlVisitas += `&status=${status}`;
-      }
+      let urlV = `${API}/api/relatorios/visitas?data_inicio=${inicio}&data_fim=${fim}`;
+      if (depto && depto !== 'todos') urlV += `&departamento_id=${depto}`;
+      if (status && status !== 'todos') urlV += `&status=${status}`;
+      setVisitas(await (await fetch(urlV)).json());
 
-      const resVisitas = await fetch(urlVisitas);
-      const dataVisitas = await resVisitas.json();
-      
-      setVisitas(dataVisitas);
+      let urlS = `${API}/api/relatorios/estatisticas?data_inicio=${inicio}&data_fim=${fim}`;
+      if (depto && depto !== 'todos') urlS += `&departamento_id=${depto}`;
+      if (status && status !== 'todos') urlS += `&status=${status}`;
+      setEstatisticas(await (await fetch(urlS)).json());
+    } catch (e) { console.error(e); }
+    finally { setCarregando(false); }
+  };
 
-      let urlStats = `http://192.167.1.255:3001/api/relatorios/estatisticas?data_inicio=${inicio}&data_fim=${fim}`;
-      if (depto && depto !== 'todos') {
-        urlStats += `&departamento_id=${depto}`;
-      }
-      if (status && status !== 'todos') {
-        urlStats += `&status=${status}`;
-      }
+  const aplicarFiltros = () => { setFiltroAtivo(null); buscarRelatorios(dataInicio, dataFim, departamentoFiltro, statusFiltro); };
+  const limparFiltros  = () => { setDepartamentoFiltro('todos'); setStatusFiltro('todos'); aplicarFiltroRapido('hoje'); };
 
-      const resStats = await fetch(urlStats);
-      const dataStats = await resStats.json();
-      
-      setEstatisticas(dataStats);
-    } catch (error) {
-      console.error('Erro ao buscar relatórios:', error);
-    } finally {
-      setCarregando(false);
+  const aplicarPreset = (key) => {
+    const novas = TODAS_COLUNAS.reduce((acc, c) => ({ ...acc, [c.key]: PRESETS[key].colunas.includes(c.key) }), {});
+    setColunasSelecionadas(novas);
+    setPresetAtivo(key);
+    setMostrarSeletor(false);
+  };
+
+  const toggleColuna = (key) => {
+    setColunasSelecionadas(prev => ({ ...prev, [key]: !prev[key] }));
+    setPresetAtivo(null);
+  };
+
+  const colunasAtivas = TODAS_COLUNAS.filter(c => colunasSelecionadas[c.key]);
+
+  const getCelula = (visita, key, horaChegada, horaChamada, horaSaida) => {
+    switch (key) {
+      case 'nome':         return visita.visitante_nome || '-';
+      case 'matricula':    return visita.visitante_matricula || '-';
+      case 'motivo':       return visita.motivo || '-';
+      case 'departamento': return visita.departamento_nome || '-';
+      case 'cadastrado':   return visita.usuario_cadastro_nome || '-';
+      case 'chamado':      return visita.usuario_chamada_nome || '-';
+      case 'finalizado':   return visita.usuario_finalizacao_nome || '-';
+      case 'data':         return formatarData(horaChegada);
+      case 'hrChegada':    return formatarHora(horaChegada);
+      case 'hrChamada':    return formatarHora(horaChamada);
+      case 'hrSaida':      return formatarHora(horaSaida);
+      case 'tempoTotal':   return calcularTempoTotal(horaChegada, horaSaida);
+      default:             return '-';
     }
   };
 
-  const aplicarFiltros = () => {
-    setFiltroAtivo(null);
-    buscarRelatorios(dataInicio, dataFim, departamentoFiltro, statusFiltro);
+  const obterCampo = (v, ...ns) => { for (const n of ns) { if (v[n] != null) return v[n]; } return null; };
+
+  const formatarData = (d) => {
+    if (!d) return '-';
+    try { const dt = new Date(d); return `${String(dt.getDate()).padStart(2,'0')}/${String(dt.getMonth()+1).padStart(2,'0')}/${dt.getFullYear()}`; }
+    catch { return '-'; }
   };
 
-  const limparFiltros = () => {
-    setDepartamentoFiltro('todos');
-    setStatusFiltro('todos');
-    aplicarFiltroRapido('hoje');
+  const formatarHora = (d) => {
+    if (!d) return '-';
+    try { const dt = new Date(d); return `${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}:${String(dt.getSeconds()).padStart(2,'0')}`; }
+    catch { return '-'; }
   };
 
-  // Busca o campo com diferentes nomes possíveis
-  const obterCampo = (visita, ...possiveisNomes) => {
-    for (const nome of possiveisNomes) {
-      if (visita[nome] !== undefined && visita[nome] !== null) {
-        return visita[nome];
-      }
-    }
-    return null;
+  const calcularTempoTotal = (c, s) => {
+    if (!c || !s) return '-';
+    try { const m = Math.floor((new Date(s)-new Date(c))/60000); if (m<0) return '-'; const h=Math.floor(m/60), mn=m%60; return h>0?`${h}h ${mn}min`:`${mn}min`; }
+    catch { return '-'; }
   };
 
-  // Formatar apenas a DATA: DD/MM/YYYY
-  const formatarData = (dataString) => {
-    if (!dataString) return '-';
-    
-    try {
-      const data = new Date(dataString);
-      if (isNaN(data.getTime())) return '-';
-      
-      const dia = String(data.getDate()).padStart(2, '0');
-      const mes = String(data.getMonth() + 1).padStart(2, '0');
-      const ano = data.getFullYear();
-      
-      return `${dia}/${mes}/${ano}`;
-    } catch (error) {
-      return '-';
-    }
-  };
+  // Largura fixa por coluna na tabela
+  const getColWidth = (key) => ({
+    nome:       '160px',
+    matricula:  '90px',
+    hrChegada:  '95px',
+    hrChamada:  '95px',
+    hrSaida:    '95px',
+    tempoTotal: '100px',
+    data:       '95px',
+    status:     '130px',
+  }[key] || undefined);
 
-  // Formatar apenas a HORA: HH:MM:SS
-  const formatarHora = (dataString) => {
-    if (!dataString) return '-';
-    
-    try {
-      const data = new Date(dataString);
-      if (isNaN(data.getTime())) return '-';
-      
-      const hora = String(data.getHours()).padStart(2, '0');
-      const minuto = String(data.getMinutes()).padStart(2, '0');
-      const segundo = String(data.getSeconds()).padStart(2, '0');
-      
-      return `${hora}:${minuto}:${segundo}`;
-    } catch (error) {
-      return '-';
-    }
-  };
+  const getStatusColor = (s) => ({ aguardando:'#FFA500', chamado:'#2196F3', finalizado:'#4CAF50' }[s] || '#666');
+  const getStatusLabel = (s) => ({ aguardando:'AGUARDANDO', chamado:'EM ATENDIMENTO', finalizado:'FINALIZADO' }[s] || s?.toUpperCase());
 
-  const formatarCPF = (cpf) => {
-    if (!cpf) return '-';
-    return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
-  };
+  // ============================================================
+  // EXPORTAR EXCEL — chama o backend que gera .xlsx com ExcelJS
+  // ============================================================
+  const exportarCSV = async () => {
+    if (visitas.length === 0) { alert('Não há dados para exportar'); return; }
 
-  // Calcular tempo total em minutos
-  const calcularTempoTotal = (horaChegada, horaSaida) => {
-    if (!horaChegada || !horaSaida) return '-';
-    
-    try {
-      const chegada = new Date(horaChegada);
-      const saida = new Date(horaSaida);
-      
-      if (isNaN(chegada.getTime()) || isNaN(saida.getTime())) return '-';
-      
-      const diferencaMs = saida - chegada;
-      const minutos = Math.floor(diferencaMs / 60000);
-      
-      if (minutos < 0) return '-';
-      
-      const horas = Math.floor(minutos / 60);
-      const mins = minutos % 60;
-      
-      if (horas > 0) {
-        return `${horas}h ${mins}min`;
-      }
-      return `${mins}min`;
-    } catch (error) {
-      return '-';
-    }
-  };
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'aguardando':
-        return '#FFA500';
-      case 'chamado':
-        return '#2196F3';
-      case 'finalizado':
-        return '#4CAF50';
-      default:
-        return '#666';
-    }
-  };
-
-  const getStatusLabel = (status) => {
-    switch (status) {
-      case 'aguardando':
-        return 'AGUARDANDO';
-      case 'chamado':
-        return 'EM ATENDIMENTO';
-      case 'finalizado':
-        return 'FINALIZADO';
-      default:
-        return status?.toUpperCase();
-    }
-  };
-
-  const exportarCSV = () => {
-    if (visitas.length === 0) {
-      alert('Não há dados para exportar');
-      return;
-    }
-
-    const dataInicioFormatada = dataInicio ? new Date(dataInicio + 'T00:00:00').toLocaleDateString('pt-BR') : '-';
-    const dataFimFormatada = dataFim ? new Date(dataFim + 'T00:00:00').toLocaleDateString('pt-BR') : '-';
-
-    let periodoTexto = '';
-    if (filtroAtivo) {
-      const periodos = {
-        'hoje': 'Hoje',
-        'ontem': 'Ontem',
-        'semana': 'Esta Semana',
-        'mes': 'Este Mês',
-        'ano': 'Este Ano'
-      };
-      periodoTexto = periodos[filtroAtivo] || 'Personalizado';
-    } else {
-      periodoTexto = 'Período Personalizado';
-    }
+    const dataInicioFormatada = dataInicio ? new Date(dataInicio+'T00:00:00').toLocaleDateString('pt-BR') : '-';
+    const dataFimFormatada    = dataFim    ? new Date(dataFim+'T00:00:00').toLocaleDateString('pt-BR')    : '-';
+    const periodos = { hoje:'Hoje', ontem:'Ontem', semana:'Esta Semana', mes:'Este Mês', ano:'Este Ano' };
+    const periodoTexto = filtroAtivo ? (periodos[filtroAtivo] || 'Personalizado') : 'Período Personalizado';
+    const nomePreset  = presetAtivo ? PRESETS[presetAtivo]?.label : 'Personalizado';
 
     const statusCount = {
-      aguardando: visitas.filter(v => v.status === 'aguardando').length,
+      aguardando:  visitas.filter(v => v.status === 'aguardando').length,
       atendimento: visitas.filter(v => v.status === 'chamado').length,
-      finalizado: visitas.filter(v => v.status === 'finalizado').length
+      finalizado:  visitas.filter(v => v.status === 'finalizado').length
     };
 
-    const headers = [
-      'ID',
-      'VISITANTE',
-      'CPF',
-      'MATRÍCULA',
-      'MOTIVO',
-      'SETOR',
-      'RESPONSAVEL',
-      'DATA',
-      'Hr-Chegada',
-      'Hr-Chamada',
-      'Hr-Saída',
-      'TEMPO TOTAL',
-    ];
-
-    const rows = visitas.map(v => {
-      const horaChegada = obterCampo(v, 'hora_chegada', 'data_entrada', 'data_chegada', 'created_at');
-      const horaChamada = obterCampo(v, 'hora_chamada', 'data_chamada', 'chamado_em');
-      const horaSaida = obterCampo(v, 'hora_saida', 'data_saida', 'finalizado_em');
-
-      return [
-        v.id || '-',
-        v.visitante_nome || '-',
-        v.visitante_cpf ? `'${v.visitante_cpf}` : '-',
-        v.visitante_matricula ? `'${v.visitante_matricula}` : '-',
-        v.motivo || '-',
-        v.departamento_nome || '-',
-        v.responsavel_nome || '-',
-        formatarData(horaChegada),
-        formatarHora(horaChegada),
-        formatarHora(horaChamada),
-        formatarHora(horaSaida),
-        calcularTempoTotal(horaChegada, horaSaida),
-      ];
+    // Mapeia visitas com os campos já calculados
+    const visitasMapeadas = visitas.map(v => {
+      const horaChegada = obterCampo(v, 'hora_chegada', 'data_entrada');
+      const horaChamada = obterCampo(v, 'hora_chamada', 'data_chamada');
+      const horaSaida   = obterCampo(v, 'hora_saida',   'data_saida');
+      const obj = { status: v.status };
+      colunasAtivas.forEach(col => {
+        if (col.key === 'matricula') obj[col.key] = v.visitante_matricula || '-';
+        else obj[col.key] = getCelula(v, col.key, horaChegada, horaChamada, horaSaida);
+      });
+      return obj;
     });
 
-    const htmlContent = `
-      <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
-      <head>
-      <meta charset="utf-8">
-      <style>
-      body {
-        font-family: Calibri, sans-serif;
-        padding: 20px;
-      }
-      table {
-        border-collapse: collapse;
-        font-size: 11pt;
-        width: 100%;
-        margin-bottom: 30px;
-      }
-      .section-title {
-        background-color: #1a5490;
-        color: white;
-        font-weight: bold;
-        font-size: 16pt;
-        padding: 15px;
-        text-align: center;
-        margin-bottom: 20px;
-      }
-      .summary-container {
-        margin-bottom: 40px;
-      }
-      .summary-header {
-        background-color: #34495e;
-        color: white;
-        font-weight: bold;
-        border: 1px solid #000;
-        padding: 12px;
-        text-align: center;
-        font-size: 14pt;
-      }
-      .summary-label {
-        background-color: #ecf0f1;
-        font-weight: bold;
-        border: 1px solid #bdc3c7;
-        padding: 10px;
-        text-align: left;
-        font-size: 12pt;
-        width: 60%;
-      }
-      .summary-value {
-        background-color: #ffffff;
-        font-weight: bold;
-        border: 1px solid #bdc3c7;
-        padding: 10px;
-        text-align: center;
-        font-size: 12pt;
-        width: 40%;
-      }
-      .chart-title {
-        background-color: #34495e;
-        color: white;
-        font-weight: bold;
-        padding: 12px;
-        text-align: center;
-        font-size: 14pt;
-        margin-bottom: 20px;
-      }
-      .header {
-        background-color: #2c3e50;
-        color: white;
-        font-weight: bold;
-        text-align: center;
-        border: 1px solid #000;
-        padding: 8px;
-      }
-      .cell {
-        border: 1px solid #bdc3c7;
-        padding: 5px;
-        text-align: left;
-      }
-      .cell-aguardando {
-        background-color: #fff3cd;
-      }
-      .cell-atendimento {
-        background-color: #cfe2ff;
-      }
-      .cell-finalizado {
-        background-color: #d1e7dd;
-      }
-      </style>
-      </head>
-      <body>
+    try {
+      const response = await fetch(`${API}/api/relatorios/exportar-excel`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          visitas:      visitasMapeadas,
+          colunas:      colunasAtivas.map(c => ({ key: c.key, excelLabel: c.excelLabel })),
+          dataInicio:   dataInicioFormatada,
+          dataFim:      dataFimFormatada,
+          periodoTexto,
+          nomePreset,
+          statusCount,
+        }),
+      });
 
-      <div style="margin-bottom: 20px; padding: 15px; background-color: #f8f9fa; border: 2px solid #1a5490; border-radius: 5px;">
-      <table style="width: 100%; margin-bottom: 0;">
-      <tbody>
-      <tr>
-      <td style="border: none; padding: 5px; font-size: 11pt;"><strong>📅 Período do Relatório:</strong> ${periodoTexto}</td>
-      </tr>
-      <tr>
-      <td style="border: none; padding: 5px; font-size: 11pt;"><strong>📊 Data Início:</strong> ${dataInicioFormatada}</td>
-      </tr>
-      <tr>
-      <td style="border: none; padding: 5px; font-size: 11pt;"><strong>📊 Data Fim:</strong> ${dataFimFormatada}</td>
-      </tr>
-      </tbody>
-      </table>
-      </div>
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.erro || 'Erro no servidor');
+      }
 
-      <div class="summary-container">
-      <div class="section-title">RELATÓRIO DE VISITAS - RESUMO GERAL</div>
-      <table>
-      <thead>
-      <tr>
-      <td colspan="2" class="summary-header">ESTATÍSTICAS</td>
-      </tr>
-      </thead>
-      <tbody>
-      <tr>
-      <td class="summary-label">Total de Registros:</td>
-      <td class="summary-value">${visitas.length}</td>
-      </tr>
-      <tr>
-      <td class="summary-label">Visitantes Aguardando:</td>
-      <td class="summary-value">${statusCount.aguardando}</td>
-      </tr>
-      <tr>
-      <td class="summary-label">Visitantes em Atendimento:</td>
-      <td class="summary-value">${statusCount.atendimento}</td>
-      </tr>
-      <tr>
-      <td class="summary-label">Visitantes Finalizados:</td>
-      <td class="summary-value">${statusCount.finalizado}</td>
-      </tr>
-      </tbody>
-      </table>
-      </div>
+      const blob = await response.blob();
+      const url  = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href     = url;
+      link.download = `relatorio_visitas_${dataInicio}_${dataFim}.xlsx`;
+      link.click();
+      URL.revokeObjectURL(url);
 
-      <div style="margin-top: 40px; page-break-before: always;">
-      <div class="chart-title">DETALHAMENTO DE VISITAS</div>
-      <table>
-      <thead>
-      <tr>
-      ${headers.map(h => `<th class="header">${h}</th>`).join('')}
-      </tr>
-      </thead>
-      <tbody>
-      ${rows.map((row) => {
-        let cellClass = 'cell';
-        const statusCell = row[row.length - 1];
-        if (statusCell.includes('AGUARDANDO')) {
-          cellClass = 'cell cell-aguardando';
-        } else if (statusCell.includes('ATENDIMENTO')) {
-          cellClass = 'cell cell-atendimento';
-        } else {
-          cellClass = 'cell cell-finalizado';
-        }
-        return `<tr>${row.map(cell =>
-          `<td class="${cellClass}">${cell}</td>`
-        ).join('')}</tr>`;
-      }).join('')}
-      </tbody>
-      </table>
-      </div>
-
-      </body>
-      </html>`;
-
-    const blob = new Blob(['\ufeff' + htmlContent], { type: 'application/vnd.ms-excel;charset=utf-8' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `relatorio_visitas_${dataInicio}_${dataFim}.xls`;
-    link.click();
+    } catch (e) {
+      console.error('Erro ao exportar:', e);
+      alert(`Erro ao gerar relatório:\n${e.message}`);
+    }
   };
 
-  const exportarPDF = () => {
-    alert('Funcionalidade de exportação para PDF será implementada em breve');
-  };
+  const exportarPDF = () => alert('Funcionalidade de exportação para PDF será implementada em breve');
 
   return (
     <div className="painel-relatorio">
-      <div className="relatorio-background"
-        style={{ backgroundImage: `url(${confederal})` }}
-      ></div>
+      <div className="relatorio-background" style={{ backgroundImage: `url(${confederal})` }}></div>
       <div className="relatorio-overlay"></div>
-      
+
       <div className="relatorio-content">
         <div className="relatorio-card">
-          
+
+          {/* HEADER */}
           <div className="relatorio-header">
             <div className="header-left">
-              <div className="header-icon">
-                <BarChart3 size={32} />
-              </div>
+              <div className="header-icon"><BarChart3 size={32} /></div>
               <div className="header-info">
                 <h1>Relatórios e Estatísticas</h1>
                 <p>{getPerfilLabel()} • Análise de Visitas</p>
               </div>
             </div>
-            <button className="btn-voltar" onClick={onVoltar}>
-              <ArrowLeft size={20} />
-              Voltar
-            </button>
+            <button className="btn-voltar" onClick={onVoltar}><ArrowLeft size={20} /> Voltar</button>
           </div>
 
+          {/* FILTROS RÁPIDOS */}
           <div className="filtros-rapidos">
-            <button 
-              className={`filtro-btn ${filtroAtivo === 'hoje' ? 'active' : ''}`}
-              onClick={() => aplicarFiltroRapido('hoje')}
-            >
-              📅 Hoje
-            </button>
-            <button 
-              className={`filtro-btn ${filtroAtivo === 'ontem' ? 'active' : ''}`}
-              onClick={() => aplicarFiltroRapido('ontem')}
-            >
-              📆 Ontem
-            </button>
-            <button 
-              className={`filtro-btn ${filtroAtivo === 'semana' ? 'active' : ''}`}
-              onClick={() => aplicarFiltroRapido('semana')}
-            >
-              📊 Esta Semana
-            </button>
-            <button 
-              className={`filtro-btn ${filtroAtivo === 'mes' ? 'active' : ''}`}
-              onClick={() => aplicarFiltroRapido('mes')}
-            >
-              📈 Este Mês
-            </button>
-            <button 
-              className={`filtro-btn ${filtroAtivo === 'ano' ? 'active' : ''}`}
-              onClick={() => aplicarFiltroRapido('ano')}
-            >
-              📋 Este Ano
-            </button>
-            
-            <button className="btn-limpar-filtros" onClick={limparFiltros}>
-              🔄 Limpar Filtros
-            </button>
+            {['hoje','ontem','semana','mes','ano'].map((p, i) => {
+              const labels = ['📅 Hoje','📆 Ontem','📊 Esta Semana','📈 Este Mês','📋 Este Ano'];
+              return (
+                <button key={p} className={`filtro-btn ${filtroAtivo === p ? 'active' : ''}`} onClick={() => aplicarFiltroRapido(p)}>
+                  {labels[i]}
+                </button>
+              );
+            })}
+            <button className="btn-limpar-filtros" onClick={limparFiltros}>🔄 Limpar</button>
           </div>
 
+          {/* FILTROS AVANÇADOS */}
           <div className="filtros-avancados">
             <div className="filtro-item">
               <label>Data Início:</label>
-              <input
-                type="date"
-                value={dataInicio}
-                onChange={(e) => setDataInicio(e.target.value)}
-              />
+              <input type="date" value={dataInicio} onChange={(e) => setDataInicio(e.target.value)} />
             </div>
             <div className="filtro-item">
               <label>Data Fim:</label>
-              <input
-                type="date"
-                value={dataFim}
-                onChange={(e) => setDataFim(e.target.value)}
-              />
+              <input type="date" value={dataFim} onChange={(e) => setDataFim(e.target.value)} />
             </div>
             <div className="filtro-item">
               <label>Departamento:</label>
-              <select
-                value={departamentoFiltro}
-                onChange={(e) => setDepartamentoFiltro(e.target.value)}
-              >
+              <select value={departamentoFiltro} onChange={(e) => setDepartamentoFiltro(e.target.value)}>
                 <option value="todos">Todos</option>
-                {departamentos.map(d => (
-                  <option key={d.id} value={d.id}>{d.nome}</option>
-                ))}
+                {departamentos.map(d => <option key={d.id} value={d.id}>{d.nome}</option>)}
               </select>
             </div>
             <div className="filtro-item">
               <label>Status:</label>
-              <select
-                value={statusFiltro}
-                onChange={(e) => setStatusFiltro(e.target.value)}
-              >
+              <select value={statusFiltro} onChange={(e) => setStatusFiltro(e.target.value)}>
                 <option value="todos">Todos</option>
                 <option value="aguardando">Aguardando</option>
                 <option value="chamado">Em Atendimento</option>
                 <option value="finalizado">Finalizado</option>
               </select>
             </div>
-            <button className="btn-aplicar-filtros" onClick={aplicarFiltros}>
-              Buscar
-            </button>
+            <button className="btn-aplicar-filtros" onClick={aplicarFiltros}>Buscar</button>
           </div>
 
+          {/* SELETOR DE COLUNAS */}
+          <div className="seletor-colunas-container">
+            <div className="seletor-header">
+              <div className="seletor-presets">
+                <span className="seletor-label"><Columns size={15} /> Colunas:</span>
+                {Object.entries(PRESETS).map(([key, preset]) => (
+                  <button
+                    key={key}
+                    className={`preset-btn ${presetAtivo === key ? 'active' : ''}`}
+                    onClick={() => aplicarPreset(key)}
+                    title={preset.descricao}
+                  >
+                    {preset.label}
+                  </button>
+                ))}
+                <button
+                  className={`preset-btn ${mostrarSeletor ? 'active' : ''} ${!presetAtivo ? 'personalizado' : ''}`}
+                  onClick={() => setMostrarSeletor(v => !v)}
+                >
+                  🔧 Personalizar {mostrarSeletor ? '▲' : '▼'}
+                </button>
+              </div>
+            </div>
+
+            {mostrarSeletor && (
+              <div className="seletor-toggles">
+                {TODAS_COLUNAS.map(col => (
+                  <label key={col.key} className={`toggle-col ${colunasSelecionadas[col.key] ? 'ativo' : ''}`}>
+                    <input
+                      type="checkbox"
+                      checked={!!colunasSelecionadas[col.key]}
+                      onChange={() => toggleColuna(col.key)}
+                    />
+                    {col.label}
+                  </label>
+                ))}
+                <div className="toggle-acoes">
+                  <button onClick={() => { const t = TODAS_COLUNAS.reduce((a,c)=>({...a,[c.key]:true}),{}); setColunasSelecionadas(t); setPresetAtivo('completo'); }}>✅ Todas</button>
+                  <button onClick={() => { const t = TODAS_COLUNAS.reduce((a,c)=>({...a,[c.key]:false}),{}); setColunasSelecionadas(t); setPresetAtivo(null); }}>❌ Nenhuma</button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* CARDS DE ESTATÍSTICAS */}
           <div className="cards-estatisticas">
-            <div className="card-stat card-azul">
-              <div className="card-icon">👥</div>
-              <div className="card-content">
-                <h3>{estatisticas.total_visitas}</h3>
-                <p>Total de Visitas</p>
-              </div>
-            </div>
-            
-            <div className="card-stat card-laranja">
-              <div className="card-icon">⏳</div>
-              <div className="card-content">
-                <h3>{estatisticas.aguardando}</h3>
-                <p>Aguardando</p>
-              </div>
-            </div>
-            
-            <div className="card-stat card-azul-claro">
-              <div className="card-icon">📈</div>
-              <div className="card-content">
-                <h3>{estatisticas.em_atendimento}</h3>
-                <p>Em Atendimento</p>
-              </div>
-            </div>
-            
-            <div className="card-stat card-verde">
-              <div className="card-icon">📊</div>
-              <div className="card-content">
-                <h3>{estatisticas.finalizados}</h3>
-                <p>Finalizados</p>
-              </div>
-            </div>
-            
-            <div className="card-stat card-amarelo">
-              <div className="card-icon">⏱️</div>
-              <div className="card-content">
-                <h3>{estatisticas.tempo_medio_espera}</h3>
-                <p>Tempo Médio Espera</p>
-              </div>
-            </div>
-            
-            <div className="card-stat card-roxo">
-              <div className="card-icon">📋</div>
-              <div className="card-content">
-                <h3>{estatisticas.tempo_medio_atendimento}</h3>
-                <p>Tempo Médio Atendimento</p>
-              </div>
-            </div>
+            <div className="card-stat card-azul"><div className="card-icon">👥</div><div className="card-content"><h3>{estatisticas.total_visitas}</h3><p>Total de Visitas</p></div></div>
+            <div className="card-stat card-laranja"><div className="card-icon">⏳</div><div className="card-content"><h3>{estatisticas.aguardando}</h3><p>Aguardando</p></div></div>
+            <div className="card-stat card-azul-claro"><div className="card-icon">📈</div><div className="card-content"><h3>{estatisticas.em_atendimento}</h3><p>Em Atendimento</p></div></div>
+            <div className="card-stat card-verde"><div className="card-icon">📊</div><div className="card-content"><h3>{estatisticas.finalizados}</h3><p>Finalizados</p></div></div>
+            <div className="card-stat card-amarelo"><div className="card-icon">⏱️</div><div className="card-content"><h3>{estatisticas.tempo_medio_espera}</h3><p>Tempo Médio Espera</p></div></div>
+            <div className="card-stat card-roxo"><div className="card-icon">📋</div><div className="card-content"><h3>{estatisticas.tempo_medio_atendimento}</h3><p>Tempo Médio Atendimento</p></div></div>
           </div>
 
+          {/* EXPORTAÇÃO */}
           <div className="exportacao-header">
-            <h3>
-              <FileDown size={20} />
-              Exportar Dados ({visitas.length} registros)
-            </h3>
+            <h3><FileDown size={20} /> Exportar Dados ({visitas.length} registros)</h3>
             <div className="exportacao-botoes">
-              <button className="btn-export btn-csv" onClick={exportarCSV}>
-                <Download size={18} />
-                Exportar Excel
-              </button>
-              <button className="btn-export btn-pdf" onClick={exportarPDF}>
-                <Download size={18} />
-                Exportar PDF
-              </button>
+              <button className="btn-export btn-csv" onClick={exportarCSV}><Download size={18} /> Exportar Excel</button>
+              <button className="btn-export btn-pdf" onClick={exportarPDF}><Download size={18} /> Exportar PDF</button>
             </div>
           </div>
 
-          <div className="tabela-container">
+          {/* TABELA */}
+          <div className="tabela-container" style={{ overflowX: 'auto', width: '100%' }}>
             <h3>Detalhamento de Visitas</h3>
-            
             {carregando ? (
               <div className="loading">Carregando dados...</div>
             ) : visitas.length === 0 ? (
-              <div className="empty-state">
-                <div className="empty-icon">👁️</div>
-                <p>Nenhum registro encontrado para o período selecionado</p>
-              </div>
+              <div className="empty-state"><div className="empty-icon">👁️</div><p>Nenhum registro encontrado para o período selecionado</p></div>
+            ) : colunasAtivas.length === 0 ? (
+              <div className="empty-state"><div className="empty-icon">📋</div><p>Selecione ao menos uma coluna para exibir</p></div>
             ) : (
-              <table className="tabela-visitas">
+              <table className="tabela-visitas" style={{ minWidth: `${Math.max(600, colunasAtivas.length * 120)}px`, width: '100%' }}>
                 <thead>
-                  <tr>
-                    <th>ID</th>
-                    <th>VISITANTE</th>
-                    <th>CPF</th>
-                    <th>MOTIVO</th>
-                    <th>DEPARTAMENTO</th>
-                    <th>RESPONSÁVEL</th>
-                    <th>DATA</th>
-                    <th>HORA CHEGADA</th>
-                    <th>HORA CHAMADA</th>
-                    <th>HORA SAÍDA</th>
-                    <th>TEMPO TOTAL</th>
-                    <th>STATUS</th>
-                  </tr>
+                  <tr>{colunasAtivas.map(col => <th key={col.key} style={{ width: getColWidth(col.key), minWidth: getColWidth(col.key), textAlign: 'center' }}>{col.label}</th>)}</tr>
                 </thead>
                 <tbody>
                   {visitas.map((visita) => {
-                    const horaChegada = obterCampo(visita, 'hora_chegada', 'data_entrada', 'data_chegada', 'created_at');
-                    const horaChamada = obterCampo(visita, 'hora_chamada', 'data_chamada', 'chamado_em');
-                    const horaSaida = obterCampo(visita, 'hora_saida', 'data_saida', 'finalizado_em');
-
+                    const horaChegada = obterCampo(visita, 'hora_chegada', 'data_entrada');
+                    const horaChamada = obterCampo(visita, 'hora_chamada', 'data_chamada');
+                    const horaSaida   = obterCampo(visita, 'hora_saida',   'data_saida');
                     return (
                       <tr key={visita.id}>
-                        <td>{visita.id}</td>
-                        <td>{visita.visitante_nome || '-'}</td>
-                        <td>{formatarCPF(visita.visitante_cpf)}</td>
-                        <td>{visita.motivo || '-'}</td>
-                        <td>{visita.departamento_nome || '-'}</td>
-                        <td>{visita.responsavel_nome || '-'}</td>
-                        <td>{formatarData(horaChegada)}</td>
-                        <td>{formatarHora(horaChegada)}</td>
-                        <td>{formatarHora(horaChamada)}</td>
-                        <td>{formatarHora(horaSaida)}</td>
-                        <td>{calcularTempoTotal(horaChegada, horaSaida)}</td>
-                        <td>
-                          <span
-                            className="status-badge"
-                            style={{ backgroundColor: getStatusColor(visita.status) }}
-                          >
-                            {getStatusLabel(visita.status)}
-                          </span>
-                        </td>
+                        {colunasAtivas.map(col => (
+                          <td key={col.key} style={{ textAlign: 'center', wordBreak: 'break-word', whiteSpace: 'normal' }}>
+                            {col.key === 'status' ? (
+                              <span className="status-badge" style={{ backgroundColor: getStatusColor(visita.status) }}>
+                                {getStatusLabel(visita.status)}
+                              </span>
+                            ) : getCelula(visita, col.key, horaChegada, horaChamada, horaSaida)}
+                          </td>
+                        ))}
                       </tr>
                     );
                   })}
@@ -726,7 +414,7 @@ export default function PainelRelatorio({ usuario, onVoltar }) {  // ADICIONAR u
               </table>
             )}
           </div>
-          
+
         </div>
         <div className="painel-admin-footer">
           <p>Sistema de Recepção - Máxima Facility | Confederal</p>

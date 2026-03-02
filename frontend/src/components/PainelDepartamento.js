@@ -193,8 +193,6 @@ export default function PainelDepartamento({ usuario, onLogout }) {
       const quantidadeAtual = visitasOrdenadas.length;
       const quantidadeAnterior = ultimaQuantidadeRef.current;
 
-      console.log(`📊 Fila: Anterior=${quantidadeAnterior}, Atual=${quantidadeAtual}, Primeira=${primeiraCarregaRef.current}`);
-
       // Notificar apenas se:
       // 1. NÃO é a primeira carga
       // 2. A quantidade atual é MAIOR que a anterior
@@ -203,7 +201,6 @@ export default function PainelDepartamento({ usuario, onLogout }) {
         console.log('🚨 NOVA PESSOA NA FILA! Disparando notificação...');
         mostrarNotificacao(quantidadeAtual);
       } else if (primeiraCarregaRef.current) {
-        console.log('ℹ️ Primeira carga - não notifica');
         primeiraCarregaRef.current = false;
       }
 
@@ -354,7 +351,7 @@ export default function PainelDepartamento({ usuario, onLogout }) {
     try {
       const response = await fetch(
         `http://192.167.1.255:3001/api/visitas/${visitaId}/finalizado`,
-        { method: 'PUT' }
+        { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ usuario_id: usuario.id }) }
       );
 
       if (response.ok) {

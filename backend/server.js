@@ -9,6 +9,8 @@ const express = require('express');
 const cors = require('cors');
 const mysql = require('mysql2/promise');
 const bcrypt = require('bcrypt');
+const relatorioExport = require('./routes/relatorioExport'); // ← ADICIONAR
+require('dotenv').config();
 
 const app = express();
 const port = 3001;
@@ -16,15 +18,18 @@ const port = 3001;
 // ============================================
 // CONFIGURAÇÃO DO POOL DE CONEXÕES MYSQL
 // ============================================
+require('dotenv').config();
+
 const pool = mysql.createPool({
-  host: 'localhost',
-  user: 'root',
-  password: 'frd@confederal@2024',
-  database: 'sistema_chamadas',
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  port: process.env.DB_PORT,
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
-  timezone: '-03:00'
+  timezone: process.env.DB_TIMEZONE
 });
 
 // ============================================
@@ -32,6 +37,7 @@ const pool = mysql.createPool({
 // ============================================
 app.use(cors());
 app.use(express.json());
+app.use('/api', relatorioExport); // ← ADICIONAR
 
 // Logger de requisições
 app.use((req, res, next) => {
@@ -186,12 +192,17 @@ app.get('/api/visitantes/:cpf', async (req, res) => {
 app.post('/api/visitas', async (req, res) => {
   const { nome, cpf, departamento_id, motivo, observacao, matricula, usuario_id } = req.body;
   
+  console.log('=== POST /api/visitas ===');
+  console.log('Body recebido:', req.body);
+  console.log('usuario_id recebido:', usuario_id);
+
   const matriculaValue = matricula || observacao || null;
   
   if (!nome || !cpf || !departamento_id) {
     return res.status(400).json({ 
       error: 'Nome, CPF e departamento são obrigatórios' 
     });
+    
   }
 
   try {
@@ -219,6 +230,15 @@ app.post('/api/visitas', async (req, res) => {
     );
 
     const [ids] = await pool.query('SELECT @visita_id as visita_id, @visitante_id as visitante_id');
+
+    // ✅ Gravar quem fez o cadastro
+    if (usuarioIdValido && ids[0].visita_id) {
+      await pool.query(
+        'UPDATE visitas SET usuario_cadastro_id = ? WHERE id = ?',
+        [usuarioIdValido, ids[0].visita_id]
+      );
+      console.log(`📋 Cadastro registrado: usuário ${usuarioIdValido} registrou visita ${ids[0].visita_id}`);
+    }
     
     const [visita] = await pool.query(
       'SELECT * FROM visitas_completas WHERE visita_id = ?',
@@ -347,11 +367,12 @@ app.put('/api/visitas/:id/chamar', async (req, res) => {
       });
     }
 
+    // ✅ Gravar quem fez a chamada
     await pool.query(
       `UPDATE visitas 
        SET status = 'chamado', 
            hora_chamada = NOW(),
-           usuario_id = ?
+           usuario_chamada_id = ?
        WHERE id = ?`,
       [usuario_id || null, id]
     );
@@ -361,7 +382,7 @@ app.put('/api/visitas/:id/chamar', async (req, res) => {
       [id]
     );
 
-    console.log(`Visitante chamado: ${visitaAtualizada[0].visitante_nome}`);
+    console.log(`📋 Chamada registrada: usuário ${usuario_id} chamou visita ${id} - ${visitaAtualizada[0].visitante_nome}`);
 
     res.json(visitaAtualizada[0]);
   } catch (err) {
@@ -372,6 +393,8 @@ app.put('/api/visitas/:id/chamar', async (req, res) => {
 
 app.put('/api/visitas/:id/finalizado', async (req, res) => {
   const { id } = req.params;
+  // ✅ MODIFICAÇÃO: Receber usuario_id no body
+  const { usuario_id } = req.body || {};
   
   console.log(`🏁 Tentando finalizar visita ID: ${id}`);
   
@@ -393,12 +416,14 @@ app.put('/api/visitas/:id/finalizado', async (req, res) => {
       });
     }
 
+    // ✅ Gravar quem finalizou
     await pool.query(
       `UPDATE visitas 
        SET status = 'finalizado', 
-           hora_saida = NOW()
+           hora_saida = NOW(),
+           usuario_finalizacao_id = ?
        WHERE id = ?`,
-      [id]
+      [usuario_id || null, id]
     );
 
     const [visitaAtualizada] = await pool.query(
@@ -406,7 +431,7 @@ app.put('/api/visitas/:id/finalizado', async (req, res) => {
       [id]
     );
 
-    console.log(`✅ Atendimento finalizado: ${visitaAtualizada[0].visitante_nome}`);
+    console.log(`📋 Finalização registrada: usuário ${usuario_id} finalizou visita ${id} - ${visitaAtualizada[0].visitante_nome}`);
 
     res.json(visitaAtualizada[0]);
   } catch (err) {
@@ -437,7 +462,8 @@ app.put('/api/visitas/:id/rechamar', async (req, res) => {
     await pool.query(
       `UPDATE visitas 
        SET status = 'aguardando', 
-           hora_chamada = NULL
+           hora_chamada = NULL,
+           usuario_chamada_id = NULL
        WHERE id = ?`,
       [id]
     );
@@ -534,7 +560,6 @@ app.post('/api/usuarios', async (req, res) => {
     });
   }
 
-  // ✅ CORRIGIDO: Adicionado 'relatorio' na lista
   const perfisValidos = ['recepcionista', 'departamento', 'painel', 'administrador', 'relatorio'];
   if (!perfisValidos.includes(perfil)) {
     return res.status(400).json({ error: 'Perfil inválido' });
@@ -697,7 +722,7 @@ app.delete('/api/usuarios/:id', async (req, res) => {
   }
 });
 
-// REATIVAR USUÁRIO - NOVA ROTA
+// REATIVAR USUÁRIO
 app.put('/api/usuarios/:id/reativar', async (req, res) => {
   const { id } = req.params;
 
@@ -743,7 +768,7 @@ app.put('/api/usuarios/:id/reativar', async (req, res) => {
   }
 });
 
-// EXCLUIR PERMANENTEMENTE - NOVA ROTA
+// EXCLUIR PERMANENTEMENTE
 app.delete('/api/usuarios/:id/excluir-permanente', async (req, res) => {
   const { id } = req.params;
 
@@ -774,21 +799,19 @@ app.delete('/api/usuarios/:id/excluir-permanente', async (req, res) => {
       });
     }
 
-    // Verificar se o usuário tem visitas registradas
     const [visitasRegistradas] = await pool.query(
-      'SELECT COUNT(*) as total FROM visitas WHERE usuario_id = ?',
-      [id]
+      `SELECT COUNT(*) as total FROM visitas 
+       WHERE usuario_cadastro_id = ? OR usuario_chamada_id = ? OR usuario_finalizacao_id = ?`,
+      [id, id, id]
     );
 
     if (visitasRegistradas[0].total > 0) {
-      // Se tem visitas, apenas marcar como excluído mas manter no banco para integridade referencial
       await pool.query(
         'UPDATE usuarios SET ativo = -1, login = CONCAT(login, "_DELETED_", ?) WHERE id = ?',
         [Date.now(), id]
       );
       console.log(`⚠️ Usuário ${usuario[0].nome} marcado como excluído (tinha ${visitasRegistradas[0].total} visitas registradas)`);
     } else {
-      // Se não tem visitas, pode excluir do banco
       await pool.query('DELETE FROM usuarios WHERE id = ?', [id]);
       console.log(`✅ Usuário ${usuario[0].nome} excluído permanentemente do banco de dados`);
     }
@@ -878,6 +901,7 @@ app.get('/api/relatorios/visitas', async (req, res) => {
   }
 
   try {
+    // ✅ MODIFICAÇÃO: JOIN com as 3 colunas de responsável
     let query = `
       SELECT 
         v.id,
@@ -891,14 +915,18 @@ app.get('/api/relatorios/visitas', async (req, res) => {
         vi.matricula as visitante_matricula,
         d.id as departamento_id,
         d.nome as departamento_nome,
-        u.nome as responsavel_nome,
+        u_cadastro.nome   as usuario_cadastro_nome,
+        u_chamada.nome    as usuario_chamada_nome,
+        u_finalizacao.nome as usuario_finalizacao_nome,
         TIMESTAMPDIFF(MINUTE, v.hora_chegada, v.hora_chamada) as tempo_espera_minutos,
         TIMESTAMPDIFF(MINUTE, v.hora_chamada, v.hora_saida) as tempo_atendimento_minutos,
         TIMESTAMPDIFF(MINUTE, v.hora_chegada, v.hora_saida) as tempo_total_minutos
       FROM visitas v
       INNER JOIN visitantes vi ON v.visitante_id = vi.id
       INNER JOIN departamentos d ON v.departamento_id = d.id
-      LEFT JOIN usuarios u ON v.usuario_id = u.id
+      LEFT JOIN usuarios u_cadastro    ON v.usuario_cadastro_id    = u_cadastro.id
+      LEFT JOIN usuarios u_chamada     ON v.usuario_chamada_id     = u_chamada.id
+      LEFT JOIN usuarios u_finalizacao ON v.usuario_finalizacao_id = u_finalizacao.id
       WHERE DATE(v.hora_chegada) BETWEEN ? AND ?
     `;
 
@@ -941,13 +969,11 @@ app.get('/api/relatorios/estatisticas', async (req, res) => {
     if (departamento_id && departamento_id !== 'todos') {
       whereConditions += ' AND departamento_id = ?';
       params.push(departamento_id);
-      console.log('  ✅ Filtro de departamento aplicado:', departamento_id);
     }
 
     if (status && status !== 'todos') {
       whereConditions += ' AND status = ?';
       params.push(status);
-      console.log('  ✅ Filtro de status aplicado:', status);
     }
 
     const [stats] = await pool.query(`
@@ -981,8 +1007,6 @@ app.get('/api/relatorios/estatisticas', async (req, res) => {
         : '0 min'
     };
 
-
-    
     res.json(resultado);
   } catch (err) {
     console.error('❌ Erro ao buscar estatísticas:', err);
