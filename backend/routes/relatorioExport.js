@@ -20,7 +20,8 @@ router.post('/relatorios/exportar-excel', async (req, res) => {
     sheet.pageSetup.fitToHeight    = 0;
     sheet.pageSetup.printTitlesRow = '13:13';
 
-    const numCols = Math.max(2, colunas.length);
+    // +1 para acomodar a coluna de numeração na primeira posição
+    const numCols = Math.max(3, colunas.length + 1);
     const C_STAT  = numCols;       // última coluna = DADOS
     const C_LABEL = numCols - 1;   // penúltima coluna = ESTATÍSTICAS / labels
 
@@ -35,12 +36,12 @@ router.post('/relatorios/exportar-excel', async (req, res) => {
     const fontBranca = (bold = false, size = 11) => ({ name: 'Calibri', size, bold, color: { argb: 'FFFFFFFF' } });
     const fontPreta  = (bold = false, size = 11) => ({ name: 'Calibri', size, bold, color: { argb: 'FF000000' } });
 
-    const setCelula = (row, col, valor, font, fill = null, align = { horizontal: 'left', vertical: 'middle' }) => {
+    const setCelula = (row, col, valor, font, fill = null, align = { horizontal: 'left', vertical: 'middle' }, wrap = true) => {
       const cell = sheet.getCell(row, col);
       cell.value     = valor;
       cell.font      = font;
       cell.border    = bordaThin;
-      cell.alignment = { ...align, wrapText: true };
+      cell.alignment = { ...align, wrapText: wrap };
       if (fill) cell.fill = fill;
     };
 
@@ -49,17 +50,17 @@ router.post('/relatorios/exportar-excel', async (req, res) => {
     };
 
     // ============================================================
-    // ESQUERDA (A:B): Nome das empresas + logos
+    // ESQUERDA: Nome das empresas (mesclados em A:C) + logos
     // ============================================================
 
-    // Linha 1: Nome Confederal (A:B)
-    mesclar(1, 1, 1, 2);
-    setCelula(1, 1, 'CONFEDERAL VIGILÂNCIA E TRANSPORTE DE VALORES LTDA', fontPreta(true), null, { horizontal: 'center', vertical: 'middle' });
+    // Linha 1: Nome Confederal (A:C) — mesclado nas 3 primeiras colunas
+    mesclar(1, 1, 1, 3);
+    setCelula(1, 1, 'CONFEDERAL VIGILÂNCIA E TRANSPORTE DE VALORES LTDA', fontPreta(true), null, { horizontal: 'center', vertical: 'middle' }, false);
     sheet.getRow(1).height = 20; sheet.getRow(1).commit();
 
-    // Linha 2: Nome Maxima (A:B)
-    mesclar(2, 1, 2, 2);
-    setCelula(2, 1, 'MÁXIMA FACILITY E SOLUÇÕES LTDA', fontPreta(true), null, { horizontal: 'center', vertical: 'middle' });
+    // Linha 2: Nome Maxima (A:C)
+    mesclar(2, 1, 2, 3);
+    setCelula(2, 1, 'MÁXIMA FACILITY E SOLUÇÕES LTDA', fontPreta(true), null, { horizontal: 'center', vertical: 'middle' }, false);
     sheet.getRow(2).height = 20; sheet.getRow(2).commit();
 
     // Linhas 3-12: altura para logos
@@ -67,21 +68,21 @@ router.post('/relatorios/exportar-excel', async (req, res) => {
       sheet.getRow(r).height = 18;
     }
 
-    // Logo Confederal (coluna A, linhas 3-12)
+    // Logo Confederal (coluna B, linhas 3-12)  → nativeCol = 1
     try {
       const imgConfederal = workbook.addImage({ filename: LOGO_CONFEDERAL, extension: 'jpeg' });
       sheet.addImage(imgConfederal, {
-        tl: { nativeCol: 0, nativeColOff: 114300, nativeRow: 3, nativeRowOff: 0 },
+        tl: { nativeCol: 1, nativeColOff: 114300, nativeRow: 3, nativeRowOff: 0 },
         ext: { width: 89, height: 94 },
         editAs: 'oneCell',
       });
     } catch(e) { console.warn('Logo Confederal não encontrada:', e.message); }
 
-    // Logo Maxima (coluna B, linhas 3-12)
+    // Logo Maxima (coluna C, linhas 3-12)  → nativeCol = 2
     try {
       const imgMaxima = workbook.addImage({ filename: LOGO_MAXIMA, extension: 'jpeg' });
       sheet.addImage(imgMaxima, {
-        tl: { nativeCol: 1, nativeColOff: 119063, nativeRow: 3, nativeRowOff: 0 },
+        tl: { nativeCol: 2, nativeColOff: 119063, nativeRow: 3, nativeRowOff: 0 },
         ext: { width: 88, height: 79 },
         editAs: 'oneCell',
       });
@@ -130,8 +131,13 @@ router.post('/relatorios/exportar-excel', async (req, res) => {
     // ============================================================
     // CABEÇALHO DAS COLUNAS (linha 13)
     // ============================================================
+
+    // Coluna Nº na primeira posição
+    setCelula(13, 1, 'Nº', fontBranca(true, 9), estiloEscuro, { horizontal: 'center', vertical: 'middle', wrapText: true });
+
+    // Colunas dinâmicas (deslocadas em 1)
     colunas.forEach((col, i) => {
-      setCelula(13, i + 1, col.excelLabel, fontBranca(true, 9), estiloEscuro, { horizontal: 'center', vertical: 'middle', wrapText: true });
+      setCelula(13, i + 2, col.excelLabel, fontBranca(true, 9), estiloEscuro, { horizontal: 'center', vertical: 'middle', wrapText: true });
     });
     sheet.getRow(13).height = 20; sheet.getRow(13).commit();
 
@@ -139,7 +145,7 @@ router.post('/relatorios/exportar-excel', async (req, res) => {
     // LINHAS DE DADOS (linha 14+)
     // ============================================================
     let L = 14;
-    visitas.forEach(v => {
+    visitas.forEach((v, idx) => {
       const statusVal = v.status === 'aguardando' ? 'AGUARDANDO'
                       : v.status === 'chamado'    ? 'EM ATENDIMENTO'
                       : 'FINALIZADO';
@@ -148,9 +154,13 @@ router.post('/relatorios/exportar-excel', async (req, res) => {
                    : 'FFD1E7DD';
       const bgFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bgArgb } };
 
+      // Número sequencial na primeira coluna
+      setCelula(L, 1, idx + 1, fontPreta(true, 9), bgFill, { horizontal: 'center', vertical: 'middle' });
+
+      // Dados das outras colunas
       colunas.forEach((col, i) => {
         const val = col.key === 'status' ? statusVal : (v[col.key] ?? '-');
-        setCelula(L, i + 1, String(val), fontPreta(false, 9), bgFill, { horizontal: 'center', vertical: 'middle', wrapText: true });
+        setCelula(L, i + 2, String(val), fontPreta(false, 9), bgFill, { horizontal: 'center', vertical: 'middle', wrapText: true });
       });
       sheet.getRow(L).commit(); L++;
     });
@@ -158,22 +168,41 @@ router.post('/relatorios/exportar-excel', async (req, res) => {
     // ============================================================
     // AJUSTA LARGURA DAS COLUNAS
     // ============================================================
-    for (let c = 1; c <= numCols; c++) {
+
+    // Coluna Nº (A) — largura fixa pequena
+    sheet.getColumn(1).width = 6;
+
+    // Garantir que as colunas B e C tenham largura suficiente para os logos
+    // e para o nome da empresa não ficar cortado
+    const LARGURA_MINIMA_LOGOS = 20;
+
+    // Demais colunas começam em c = 2
+    for (let c = 2; c <= numCols; c++) {
       const col = sheet.getColumn(c);
-      const colKey = colunas[c - 1]?.key;
+      const colKey = colunas[c - 2]?.key; // -2 porque a coluna 1 é o Nº
       let maxLen = 10;
       col.eachCell({ includeEmpty: false }, cell => {
         const len = cell.value ? String(cell.value).length : 0;
         if (len > maxLen) maxLen = len;
       });
-      if      (colKey === 'matricula')  col.width = 12;
-      else if (colKey === 'hrChegada')  col.width = 12;
-      else if (colKey === 'hrChamada')  col.width = 12;
-      else if (colKey === 'hrSaida')    col.width = 12;
-      else if (colKey === 'tempoTotal') col.width = 13;
-      else if (colKey === 'data')       col.width = 13;
-      else if (colKey === 'status')     col.width = 16;
-      else col.width = Math.min(maxLen + 2, 40);
+
+      let larguraCalculada;
+      if      (colKey === 'matricula')  larguraCalculada = 12;
+      else if (colKey === 'hrChegada')  larguraCalculada = 12;
+      else if (colKey === 'hrChamada')  larguraCalculada = 12;
+      else if (colKey === 'hrSaida')    larguraCalculada = 12;
+      else if (colKey === 'tempoTotal') larguraCalculada = 13;
+      else if (colKey === 'data')       larguraCalculada = 13;
+      else if (colKey === 'status')     larguraCalculada = 16;
+      else larguraCalculada = Math.min(maxLen + 2, 40);
+
+      // Para colunas 2 e 3 (que ficam embaixo dos nomes das empresas),
+      // garantir largura mínima para que o nome longo não fique cortado
+      if (c === 2 || c === 3) {
+        larguraCalculada = Math.max(larguraCalculada, LARGURA_MINIMA_LOGOS);
+      }
+
+      col.width = larguraCalculada;
     }
 
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
