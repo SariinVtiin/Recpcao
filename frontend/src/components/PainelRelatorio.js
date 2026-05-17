@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { BarChart3, Download, FileDown, ArrowLeft, Columns } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { BarChart3, Download, FileDown, ArrowLeft, Columns, Search, X } from 'lucide-react';
 import './PainelRelatorio.css';
 import confederal from '../assets/confederal.png';
 
@@ -40,6 +40,14 @@ const PRESETS = {
   }
 };
 
+// Campos disponíveis para a busca textual
+const CAMPOS_BUSCA = [
+  { key: 'nome',         label: 'Visitante'    },
+  { key: 'matricula',    label: 'Matrícula'    },  // ← nova
+  { key: 'motivo',       label: 'Motivo'       },
+  { key: 'departamento', label: 'Departamento' },
+];
+
 const presetInicial = TODAS_COLUNAS.reduce((acc, c) => ({ ...acc, [c.key]: true }), {});
 
 export default function PainelRelatorio({ usuario, onVoltar }) {
@@ -60,6 +68,10 @@ export default function PainelRelatorio({ usuario, onVoltar }) {
   const [colunasSelecionadas, setColunasSelecionadas] = useState(presetInicial);
   const [presetAtivo, setPresetAtivo] = useState('completo');
   const [mostrarSeletor, setMostrarSeletor] = useState(false);
+
+  // 🔍 Estado da busca textual
+  const [campoBusca, setCampoBusca] = useState('nome');
+  const [termoBusca, setTermoBusca] = useState('');
 
   const getPerfilLabel = () => {
     const perfis = { administrador: 'Administrador', relatorio: 'Analista de Relatórios' };
@@ -116,7 +128,7 @@ export default function PainelRelatorio({ usuario, onVoltar }) {
   };
 
   const aplicarFiltros = () => { setFiltroAtivo(null); buscarRelatorios(dataInicio, dataFim, departamentoFiltro, statusFiltro); };
-  const limparFiltros  = () => { setDepartamentoFiltro('todos'); setStatusFiltro('todos'); aplicarFiltroRapido('hoje'); };
+  const limparFiltros  = () => { setDepartamentoFiltro('todos'); setStatusFiltro('todos'); setTermoBusca(''); aplicarFiltroRapido('hoje'); };
 
   const aplicarPreset = (key) => {
     const novas = TODAS_COLUNAS.reduce((acc, c) => ({ ...acc, [c.key]: PRESETS[key].colunas.includes(c.key) }), {});
@@ -131,6 +143,21 @@ export default function PainelRelatorio({ usuario, onVoltar }) {
   };
 
   const colunasAtivas = TODAS_COLUNAS.filter(c => colunasSelecionadas[c.key]);
+
+  // 🔍 Filtragem em memória pela busca textual
+  const visitasFiltradas = useMemo(() => {
+    if (!termoBusca.trim()) return visitas;
+    const termo = termoBusca.toLowerCase().trim();
+    return visitas.filter(v => {
+      switch (campoBusca) {
+        case 'nome':         return (v.visitante_nome || '').toLowerCase().includes(termo);
+        case 'matricula': return String(v.visitante_matricula || '').toLowerCase().includes(termo);
+        case 'motivo':       return (v.motivo || '').toLowerCase().includes(termo);
+        case 'departamento': return (v.departamento_nome || '').toLowerCase().includes(termo);
+        default:             return true;
+      }
+    });
+  }, [visitas, campoBusca, termoBusca]);
 
   const getCelula = (visita, key, horaChegada, horaChamada, horaSaida) => {
     switch (key) {
@@ -170,7 +197,6 @@ export default function PainelRelatorio({ usuario, onVoltar }) {
     catch { return '-'; }
   };
 
-  // Largura fixa por coluna na tabela
   const getColWidth = (key) => ({
     nome:       '160px',
     matricula:  '90px',
@@ -186,10 +212,10 @@ export default function PainelRelatorio({ usuario, onVoltar }) {
   const getStatusLabel = (s) => ({ aguardando:'AGUARDANDO', chamado:'EM ATENDIMENTO', finalizado:'FINALIZADO' }[s] || s?.toUpperCase());
 
   // ============================================================
-  // EXPORTAR EXCEL — chama o backend que gera .xlsx com ExcelJS
+  // EXPORTAR EXCEL — usa lista filtrada (visitasFiltradas)
   // ============================================================
   const exportarCSV = async () => {
-    if (visitas.length === 0) { alert('Não há dados para exportar'); return; }
+    if (visitasFiltradas.length === 0) { alert('Não há dados para exportar'); return; }
 
     const dataInicioFormatada = dataInicio ? new Date(dataInicio+'T00:00:00').toLocaleDateString('pt-BR') : '-';
     const dataFimFormatada    = dataFim    ? new Date(dataFim+'T00:00:00').toLocaleDateString('pt-BR')    : '-';
@@ -198,13 +224,12 @@ export default function PainelRelatorio({ usuario, onVoltar }) {
     const nomePreset  = presetAtivo ? PRESETS[presetAtivo]?.label : 'Personalizado';
 
     const statusCount = {
-      aguardando:  visitas.filter(v => v.status === 'aguardando').length,
-      atendimento: visitas.filter(v => v.status === 'chamado').length,
-      finalizado:  visitas.filter(v => v.status === 'finalizado').length
+      aguardando:  visitasFiltradas.filter(v => v.status === 'aguardando').length,
+      atendimento: visitasFiltradas.filter(v => v.status === 'chamado').length,
+      finalizado:  visitasFiltradas.filter(v => v.status === 'finalizado').length
     };
 
-    // Mapeia visitas com os campos já calculados
-    const visitasMapeadas = visitas.map(v => {
+    const visitasMapeadas = visitasFiltradas.map(v => {
       const horaChegada = obterCampo(v, 'hora_chegada', 'data_entrada');
       const horaChamada = obterCampo(v, 'hora_chamada', 'data_chamada');
       const horaSaida   = obterCampo(v, 'hora_saida',   'data_saida');
@@ -251,6 +276,9 @@ export default function PainelRelatorio({ usuario, onVoltar }) {
   };
 
   const exportarPDF = () => alert('Funcionalidade de exportação para PDF será implementada em breve');
+
+  // Placeholder dinâmico do campo de busca
+  const placeholderBusca = `Pesquisar por ${CAMPOS_BUSCA.find(c => c.key === campoBusca)?.label.toLowerCase()}...`;
 
   return (
     <div className="painel-relatorio">
@@ -314,6 +342,41 @@ export default function PainelRelatorio({ usuario, onVoltar }) {
             <button className="btn-aplicar-filtros" onClick={aplicarFiltros}>Buscar</button>
           </div>
 
+          {/* 🔍 BUSCA TEXTUAL */}
+          <div className="busca-container">
+            <div className="busca-icon"><Search size={18} /></div>
+            <select
+              className="busca-select"
+              value={campoBusca}
+              onChange={(e) => setCampoBusca(e.target.value)}
+            >
+              {CAMPOS_BUSCA.map(c => (
+                <option key={c.key} value={c.key}>{c.label}</option>
+              ))}
+            </select>
+            <input
+              type="text"
+              className="busca-input"
+              value={termoBusca}
+              onChange={(e) => setTermoBusca(e.target.value)}
+              placeholder={placeholderBusca}
+            />
+            {termoBusca && (
+              <button
+                className="busca-limpar"
+                onClick={() => setTermoBusca('')}
+                title="Limpar busca"
+              >
+                <X size={16} />
+              </button>
+            )}
+            {termoBusca && (
+              <span className="busca-resultado">
+                {visitasFiltradas.length} {visitasFiltradas.length === 1 ? 'resultado' : 'resultados'}
+              </span>
+            )}
+          </div>
+
           {/* SELETOR DE COLUNAS */}
           <div className="seletor-colunas-container">
             <div className="seletor-header">
@@ -370,7 +433,7 @@ export default function PainelRelatorio({ usuario, onVoltar }) {
 
           {/* EXPORTAÇÃO */}
           <div className="exportacao-header">
-            <h3><FileDown size={20} /> Exportar Dados ({visitas.length} registros)</h3>
+            <h3><FileDown size={20} /> Exportar Dados ({visitasFiltradas.length} registros)</h3>
             <div className="exportacao-botoes">
               <button className="btn-export btn-csv" onClick={exportarCSV}><Download size={18} /> Exportar Excel</button>
               <button className="btn-export btn-pdf" onClick={exportarPDF}><Download size={18} /> Exportar PDF</button>
@@ -382,8 +445,15 @@ export default function PainelRelatorio({ usuario, onVoltar }) {
             <h3>Detalhamento de Visitas</h3>
             {carregando ? (
               <div className="loading">Carregando dados...</div>
-            ) : visitas.length === 0 ? (
-              <div className="empty-state"><div className="empty-icon">👁️</div><p>Nenhum registro encontrado para o período selecionado</p></div>
+            ) : visitasFiltradas.length === 0 ? (
+              <div className="empty-state">
+                <div className="empty-icon">👁️</div>
+                <p>
+                  {termoBusca
+                    ? `Nenhum resultado encontrado para "${termoBusca}"`
+                    : 'Nenhum registro encontrado para o período selecionado'}
+                </p>
+              </div>
             ) : colunasAtivas.length === 0 ? (
               <div className="empty-state"><div className="empty-icon">📋</div><p>Selecione ao menos uma coluna para exibir</p></div>
             ) : (
@@ -392,7 +462,7 @@ export default function PainelRelatorio({ usuario, onVoltar }) {
                   <tr>{colunasAtivas.map(col => <th key={col.key} style={{ width: getColWidth(col.key), minWidth: getColWidth(col.key), textAlign: 'center' }}>{col.label}</th>)}</tr>
                 </thead>
                 <tbody>
-                  {visitas.map((visita) => {
+                  {visitasFiltradas.map((visita) => {
                     const horaChegada = obterCampo(visita, 'hora_chegada', 'data_entrada');
                     const horaChamada = obterCampo(visita, 'hora_chamada', 'data_chamada');
                     const horaSaida   = obterCampo(visita, 'hora_saida',   'data_saida');
