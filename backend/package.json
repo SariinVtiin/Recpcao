@@ -18,8 +18,9 @@
     "cors": "^2.8.5",
     "dotenv": "^17.3.1",
     "exceljs": "^4.4.0",
-    "express": "^5.1.0",
+    "express": "^5.2.1",
     "mysql2": "^3.15.2",
     "selfsigned": "^2.4.1"
-  }
+  },
+  "type": "commonjs"
 }

@@ -1,0 +1,3 @@
+streams:
+  camera1:
+    - rtsp://${CAM1_USER}:${CAM1_PASSWORD}@${CAM1_HOST}:${CAM1_PORT}/cam/realmonitor?channel=${CAM1_CHANNEL}&subtype=${CAM1_SUBTYPE}

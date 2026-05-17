@@ -1,8 +1,135 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Building2, LogOut, Clock, UserCheck, CheckCircle } from 'lucide-react';
+import { Building2, LogOut, Clock, UserCheck, CheckCircle, DoorOpen, X } from 'lucide-react';
+import Hls from 'hls.js';
 import './PainelDepartamento.css';
 import confederal from '../assets/confederal.png';
 
+// URL do stream HLS da câmera (servida pelo backend)
+const CAMERA_STREAM_URL = 'http://192.167.1.255:3001/camera/live.m3u8';
+
+// ============================================
+// COMPONENTE: Modal da Câmera
+// ============================================
+function CameraModal({ aberto, onFechar }) {
+  const videoRef = useRef(null);
+  const [erro, setErro] = useState('');
+
+  useEffect(() => {
+    if (!aberto) return;
+
+    const video = videoRef.current;
+    if (!video) return;
+
+    setErro('');
+    let hls = null;
+    let recoverTimer = null;
+
+    const inicializarHls = () => {
+      if (Hls.isSupported()) {
+        hls = new Hls({
+          liveSyncDurationCount: 2,
+          liveMaxLatencyDurationCount: 4,
+          liveDurationInfinity: true,    // trata como stream infinito ao vivo
+          liveBackBufferLength: 0,       // descarta tudo que já foi exibido
+          maxBufferLength: 6,            // limita o buffer (mantém perto do live)
+          manifestLoadingMaxRetry: 6,
+          manifestLoadingRetryDelay: 1000,
+        });
+
+        hls.loadSource(`${CAMERA_STREAM_URL}?t=${Date.now()}`);
+        hls.attachMedia(video);
+
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+          video.play().catch(e => console.log('Autoplay bloqueado:', e));
+        });
+
+        hls.on(Hls.Events.ERROR, (event, data) => {
+          if (data.fatal) {
+            console.warn('⚠️ Erro fatal no HLS, tentando recuperar...', data.type);
+            switch (data.type) {
+              case Hls.ErrorTypes.NETWORK_ERROR:
+                // tenta recarregar o manifesto
+                setTimeout(() => hls?.startLoad(), 1000);
+                break;
+              case Hls.ErrorTypes.MEDIA_ERROR:
+                hls?.recoverMediaError();
+                break;
+              default:
+                // último recurso: destrói e reinicia
+                if (hls) hls.destroy();
+                recoverTimer = setTimeout(inicializarHls, 2000);
+            }
+          }
+        });
+
+        // Se o vídeo travar (não avança), força volta ao live
+        video.addEventListener('stalled', () => {
+          console.log('🔄 Stream travou, voltando ao live...');
+          if (hls) {
+            hls.currentLevel = -1;
+            hls.startLoad(-1);
+          }
+        });
+
+      } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        video.src = `${CAMERA_STREAM_URL}?t=${Date.now()}`;
+        video.addEventListener('loadedmetadata', () => {
+          video.play().catch(e => console.log('Autoplay bloqueado:', e));
+        });
+      } else {
+        setErro('Seu navegador não suporta reprodução de HLS.');
+      }
+    };
+
+    inicializarHls();
+
+    return () => {
+      if (recoverTimer) clearTimeout(recoverTimer);
+      if (hls) hls.destroy();
+      if (video) {
+        video.pause();
+        video.removeAttribute('src');
+        video.load();
+      }
+    };
+  }, [aberto]);
+
+  if (!aberto) return null;
+
+  return (
+    <div className="painel-dept-modal-overlay" onClick={onFechar}>
+      <div className="painel-dept-modal-content" onClick={e => e.stopPropagation()}>
+        <div className="painel-dept-modal-header">
+          <h2>📹 Câmera da Sala</h2>
+          <button onClick={onFechar} className="painel-dept-modal-close" aria-label="Fechar">
+            <X size={24} />
+          </button>
+        </div>
+        <div className="painel-dept-modal-body">
+          {erro ? (
+            <div className="painel-dept-camera-erro">
+              <p>⚠️ {erro}</p>
+            </div>
+          ) : (
+            <video
+              ref={videoRef}
+              autoPlay
+              muted
+              playsInline
+              disablePictureInPicture
+              controlsList="nodownload nofullscreen noremoteplayback"
+              className="painel-dept-camera-video"
+            />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================
+// COMPONENTE PRINCIPAL
+// ============================================
 export default function PainelDepartamento({ usuario, onLogout }) {
   const [visitasAguardando, setVisitasAguardando] = useState([]);
   const [visitasChamados, setVisitasChamados] = useState([]);
@@ -11,15 +138,13 @@ export default function PainelDepartamento({ usuario, onLogout }) {
   const [abaAtiva, setAbaAtiva] = useState('aguardando');
   const [debugNotificacao, setDebugNotificacao] = useState('');
   const [temporizadores, setTemporizadores] = useState({});
+  const [modalCameraAberto, setModalCameraAberto] = useState(false);
   
-  // Usar useRef para manter o valor entre renders
   const ultimaQuantidadeRef = useRef(0);
   const primeiraCarregaRef = useRef(true);
 
-  // Constante de tempo mínimo de atendimento (1min = 60 segundos)\\
-  const TEMPO_MINIMO_ATENDIMENTO = 30 * 1000; // 30 segundos em milissegundos
+  const TEMPO_MINIMO_ATENDIMENTO = 30 * 1000;
 
-  // Solicitar permissão de notificações
   useEffect(() => {
     const solicitarPermissao = async () => {
       console.log('🔔 Solicitando permissão de notificações...');
@@ -36,7 +161,6 @@ export default function PainelDepartamento({ usuario, onLogout }) {
         setDebugNotificacao(`Permissão: ${permission}`);
 
         if (permission === 'granted') {
-          // Notificação de teste
           new Notification('✅ Notificações Ativadas!', {
             body: 'Você receberá alertas de novos visitantes',
             icon: '/confederal2.png',
@@ -58,7 +182,6 @@ export default function PainelDepartamento({ usuario, onLogout }) {
     solicitarPermissao();
   }, []);
 
-  // Atualizar temporizadores a cada segundo
   useEffect(() => {
     const interval = setInterval(() => {
       setTemporizadores(prev => {
@@ -73,47 +196,28 @@ export default function PainelDepartamento({ usuario, onLogout }) {
     return () => clearInterval(interval);
   }, []);
 
-  // Função para calcular tempo restante até poder finalizar
   const calcularTempoRestante = (horaChamada) => {
     const tempoDecorrido = Date.now() - new Date(horaChamada).getTime();
     const tempoRestante = TEMPO_MINIMO_ATENDIMENTO - tempoDecorrido;
-    
     if (tempoRestante <= 0) return 0;
-    
-    return Math.ceil(tempoRestante / 1000); // Retorna em segundos
+    return Math.ceil(tempoRestante / 1000);
   };
 
-  // Função para verificar se pode finalizar
   const podeFinalizarAtendimento = (horaChamada) => {
     return calcularTempoRestante(horaChamada) <= 0;
   };
 
-  // Função para formatar tempo restante
   const formatarTempoRestante = (segundos) => {
     if (segundos <= 0) return '0s';
     const mins = Math.floor(segundos / 60);
     const secs = segundos % 60;
-    if (mins > 0) {
-      return `${mins}min ${secs}s`;
-    }
+    if (mins > 0) return `${mins}min ${secs}s`;
     return `${secs}s`;
   };
 
-  // Função para mostrar notificação
   const mostrarNotificacao = useCallback((quantidade) => {
-    console.log('🔔 Tentando mostrar notificação...');
-    console.log('   Quantidade:', quantidade);
-    console.log('   Permissão:', Notification?.permission);
-    
-    if (!('Notification' in window)) {
-      console.error('❌ Notification API não disponível');
-      return;
-    }
-    
-    if (Notification.permission !== 'granted') {
-      console.warn('⚠️ Permissão negada:', Notification.permission);
-      return;
-    }
+    if (!('Notification' in window)) return;
+    if (Notification.permission !== 'granted') return;
 
     try {
       const titulo = quantidade === 1 
@@ -124,10 +228,7 @@ export default function PainelDepartamento({ usuario, onLogout }) {
         ? 'Um visitante está esperando atendimento'
         : `${quantidade} visitantes estão esperando atendimento`;
 
-      console.log('✅ Criando notificação:', titulo);
-
-      // Tocar som (opcional)
-      const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuFzvLYiTcIGWi77eefTRAMUKfj8LZjHAY4ktfzzHosBSh+zPLaizsKGGS56+mjUxELTKXh8bllHgU2jdXzzHkrBSh+zPLaizsKF2W56+mjUxELTKXh8bllHgU2jdXzzHkrBSh+zPLaizsKF2W56+mjUxELTKXh8bllHgU2jdXzzHkrBSh+zPLaizsKF2W56+mjUxELTKXh8bllHgU2jdXzzHkrBSh+zPLaizsKF2W56+mjUxELTKXh8bllHgU2jdXzzHkrBSh+zPLaizsKF2W56+mjUxELTKXh8bllHgU2jdXzzHkrBSh+zPLaizsKF2W56+mjUxELTKXh8bllHgU2jdXzzHkrBSh+zPLaizsKF2W56+mjUxELTKXh8bllHgU2jdXzzHkrBSh+zPLaizsKF2W56+mjUxELTKXh8bllHgU2jdXzzHkrBSh+zPLaizsKF2W56+mjUxELTKXh8bllHgU2jdXzzHkrBSh+zPLaizsKF2W56+mjUxELTKXh8bllHgU2jdXzzHkrBSh+zPLaizsKF2W56+mjUxELTKXh8bllHgU2jdXzzHkrBSh+zPLaizsKF2W56+mjUxELTKXh8bllHgU2jdXzzHkrBQ==');
+      const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuFzvLYiTcIGWi77eefTRAMUKfj8LZjHAY4ktfzzHosBSh+zPLaizsKGGS56+mjUxELTKXh8bllHgU2jdXzzHkrBSh+zPLaizsKF2W56+mjUxELTKXh8bllHgU2jdXzzHkrBSh+zPLaizsKF2W56+mjUxELTKXh8bllHgU2jdXzzHkrBQ==');
       audio.play().catch(e => console.log('Som não pode ser tocado:', e));
 
       const notificacao = new Notification(titulo, {
@@ -140,16 +241,12 @@ export default function PainelDepartamento({ usuario, onLogout }) {
         vibrate: [200, 100, 200]
       });
 
-      console.log('✅ Notificação criada!');
-
       notificacao.onclick = () => {
-        console.log('👆 Notificação clicada');
         window.focus();
         setAbaAtiva('aguardando');
         notificacao.close();
       };
 
-      // Auto-fechar após 8 segundos
       setTimeout(() => notificacao.close(), 8000);
 
     } catch (error) {
@@ -165,7 +262,6 @@ export default function PainelDepartamento({ usuario, onLogout }) {
       );
       const data = await response.json();
 
-      // ✅ Filtrar apenas visitas do dia atual
       const hoje = new Date();
       hoje.setHours(0, 0, 0, 0);
       
@@ -176,8 +272,7 @@ export default function PainelDepartamento({ usuario, onLogout }) {
         return dataVisita.getTime() === hoje.getTime();
       });
 
-      // ⏱️ TIMER: Filtrar visitas que já passaram do tempo de deslocamento (1 minuto)
-      const TEMPO_DESLOCAMENTO_MS = 1 * 60 * 1000; // 1 minuto em milissegundos
+      const TEMPO_DESLOCAMENTO_MS = 1 * 60 * 1000;
       const agora = new Date().getTime();
       
       const visitasComDelay = visitasHoje.filter(v => {
@@ -193,18 +288,12 @@ export default function PainelDepartamento({ usuario, onLogout }) {
       const quantidadeAtual = visitasOrdenadas.length;
       const quantidadeAnterior = ultimaQuantidadeRef.current;
 
-      // Notificar apenas se:
-      // 1. NÃO é a primeira carga
-      // 2. A quantidade atual é MAIOR que a anterior
-      // 3. Há pelo menos 1 visitante
       if (!primeiraCarregaRef.current && quantidadeAtual > quantidadeAnterior && quantidadeAtual > 0) {
-        console.log('🚨 NOVA PESSOA NA FILA! Disparando notificação...');
         mostrarNotificacao(quantidadeAtual);
       } else if (primeiraCarregaRef.current) {
         primeiraCarregaRef.current = false;
       }
 
-      // Atualizar a referência
       ultimaQuantidadeRef.current = quantidadeAtual;
       setVisitasAguardando(visitasOrdenadas);
 
@@ -220,7 +309,6 @@ export default function PainelDepartamento({ usuario, onLogout }) {
       );
       const data = await response.json();
 
-      // ✅ Filtrar apenas visitas do dia atual
       const hoje = new Date();
       hoje.setHours(0, 0, 0, 0);
       
@@ -237,7 +325,6 @@ export default function PainelDepartamento({ usuario, onLogout }) {
 
       setVisitasChamados(visitasOrdenadas);
       
-      // Inicializar temporizadores para visitas chamadas
       const novosTemp = {};
       visitasOrdenadas.forEach(v => {
         novosTemp[v.visita_id] = Date.now();
@@ -284,7 +371,6 @@ export default function PainelDepartamento({ usuario, onLogout }) {
       buscarChamados();
       buscarFinalizados();
       
-      // Atualizar a cada 5 segundos
       const interval = setInterval(() => {
         buscarAguardando();
         buscarChamados();
@@ -325,7 +411,6 @@ export default function PainelDepartamento({ usuario, onLogout }) {
   };
 
   const finalizarAtendimento = async (visitaId, nomeVisitante, horaChamada) => {
-    // Verificar se passou o tempo mínimo
     if (!podeFinalizarAtendimento(horaChamada)) {
       const tempoRestante = calcularTempoRestante(horaChamada);
       const mins = Math.floor(tempoRestante / 60);
@@ -355,7 +440,6 @@ export default function PainelDepartamento({ usuario, onLogout }) {
       );
 
       if (response.ok) {
-        // Remover do temporizador
         setTemporizadores(prev => {
           const novo = { ...prev };
           delete novo[visitaId];
@@ -374,6 +458,11 @@ export default function PainelDepartamento({ usuario, onLogout }) {
     } finally {
       setCarregando(false);
     }
+  };
+
+  // Abre o modal da câmera
+  const handleSala = () => {
+    setModalCameraAberto(true);
   };
 
   const calcularTempoEspera = (horaChegada) => {
@@ -431,10 +520,16 @@ export default function PainelDepartamento({ usuario, onLogout }) {
                 </p>
               </div>
             </div>
-            <button onClick={onLogout} className="painel-dept-btn-logout">
-              <LogOut size={18} className="mr-2" />
-              Sair
-            </button>
+            <div className="painel-dept-header-actions">
+              <button onClick={handleSala} className="painel-dept-btn-sala">
+                <DoorOpen size={18} className="mr-2" />
+                Sala
+              </button>
+              <button onClick={onLogout} className="painel-dept-btn-logout">
+                <LogOut size={18} className="mr-2" />
+                Sair
+              </button>
+            </div>
           </div>
 
           {/* Abas */}
@@ -668,6 +763,12 @@ export default function PainelDepartamento({ usuario, onLogout }) {
           <p>© 2026 • Desenvolvido por Jonathan Almeida Vieira • TI</p>
         </div>
       </div>
+
+      {/* Modal da Câmera */}
+      <CameraModal
+        aberto={modalCameraAberto}
+        onFechar={() => setModalCameraAberto(false)}
+      />
     </div>
   );
 }

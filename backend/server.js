@@ -2,24 +2,26 @@
 // SERVER.JS - Sistema de Recepção Empresarial
 // Backend: Node.js + Express + MySQL + HTTP
 // Fluxo: aguardando → chamado → finalizado
-// VERSÃO HTTP
+// VERSÃO HTTP + STREAMING DE CÂMERA (HLS)
 // ============================================
+
+require('dotenv').config();
 
 const express = require('express');
 const cors = require('cors');
 const mysql = require('mysql2/promise');
 const bcrypt = require('bcrypt');
-const relatorioExport = require('./routes/relatorioExport'); // ← ADICIONAR
-require('dotenv').config();
+const { spawn } = require('child_process');
+const path = require('path');
+const fs = require('fs');
+const relatorioExport = require('./routes/relatorioExport');
 
 const app = express();
-const port = 3001;
+const port = process.env.PORT || 3001;
 
 // ============================================
 // CONFIGURAÇÃO DO POOL DE CONEXÕES MYSQL
 // ============================================
-require('dotenv').config();
-
 const pool = mysql.createPool({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
@@ -37,12 +39,131 @@ const pool = mysql.createPool({
 // ============================================
 app.use(cors());
 app.use(express.json());
-app.use('/api', relatorioExport); // ← ADICIONAR
 
-// Logger de requisições
+// Servir arquivos estáticos do streaming HLS
+const PUBLIC_DIR = path.join(__dirname, 'public');
+if (!fs.existsSync(PUBLIC_DIR)) {
+  fs.mkdirSync(PUBLIC_DIR, { recursive: true });
+}
+app.use('/camera', express.static(PUBLIC_DIR));
+
+app.use('/api', relatorioExport);
+
+// Logger de requisições (ignora arquivos do HLS pra não poluir o log)
 app.use((req, res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+  if (!req.path.startsWith('/camera/')) {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+  }
   next();
+});
+
+// ============================================
+// STREAMING DA CÂMERA (RTSP → HLS via FFmpeg)
+// ============================================
+let ffmpegProcess = null;
+let ffmpegRestartTimeout = null;
+
+function mascararSenha(texto, senha) {
+  if (!senha || !texto) return texto;
+  return texto.split(senha).join('****');
+}
+
+function iniciarStreamCamera() {
+  const cam = {
+    user: process.env.CAM1_USER,
+    password: process.env.CAM1_PASSWORD,
+    host: process.env.CAM1_HOST,
+    port: process.env.CAM1_PORT,
+    channel: process.env.CAM1_CHANNEL,
+    subtype: process.env.CAM1_SUBTYPE
+  };
+
+  const ffmpegPath = process.env.FFMPEG_PATH;
+  const hlsOutput = process.env.HLS_OUTPUT || 'public/live.m3u8';
+  const hlsSegmentTime = process.env.HLS_SEGMENT_TIME || '2';
+  const hlsListSize = process.env.HLS_LIST_SIZE || '3';
+
+  const camConfigOk = cam.user && cam.password && cam.host && cam.port && cam.channel !== undefined && cam.subtype !== undefined;
+  if (!camConfigOk || !ffmpegPath) {
+    console.log('📹 Câmera não configurada no .env (CAM1_* e FFMPEG_PATH) — streaming desativado');
+    return;
+  }
+
+  if (!fs.existsSync(ffmpegPath)) {
+    console.error(`❌ FFmpeg não encontrado em: ${ffmpegPath}`);
+    console.error('   Verifique a variável FFMPEG_PATH no .env');
+    return;
+  }
+
+  // 🧹 LIMPEZA: remove arquivos antigos do streaming antes de começar
+  try {
+    const arquivos = fs.readdirSync(PUBLIC_DIR);
+    arquivos
+      .filter(f => f.endsWith('.m3u8') || f.endsWith('.ts'))
+      .forEach(f => {
+        fs.unlinkSync(path.join(PUBLIC_DIR, f));
+      });
+    console.log('🧹 Arquivos HLS antigos removidos');
+  } catch (e) {
+    console.warn('⚠️ Falha ao limpar arquivos antigos:', e.message);
+  }
+
+  const rtsp = `rtsp://${cam.user}:${encodeURIComponent(cam.password)}@${cam.host}:${cam.port}/cam/realmonitor?channel=${cam.channel}&subtype=${cam.subtype}`;
+
+  console.log(`📹 Iniciando streaming da câmera ${cam.host}:${cam.port} (canal ${cam.channel})`);
+
+ffmpegProcess = spawn(ffmpegPath, [
+    '-rtsp_transport', 'tcp',
+    '-timeout', '5000000',
+    '-fflags', '+nobuffer',
+    '-flags', 'low_delay',
+    '-i', rtsp,
+    '-f', 'hls',
+    '-hls_time', hlsSegmentTime,
+    '-hls_list_size', hlsListSize,
+    '-hls_flags', 'delete_segments+omit_endlist',
+    hlsOutput
+  ]);
+
+  ffmpegProcess.stderr.on('data', data => {
+    const log = mascararSenha(data.toString(), cam.password);
+    process.stdout.write(log);
+  });
+
+  ffmpegProcess.on('close', code => {
+    console.log(`⚠️ FFmpeg encerrou com código ${code}`);
+    ffmpegProcess = null;
+
+    if (code !== null && code !== 255) {
+      console.log('🔄 Reiniciando streaming em 5 segundos...');
+      ffmpegRestartTimeout = setTimeout(iniciarStreamCamera, 5000);
+    }
+  });
+
+  ffmpegProcess.on('error', err => {
+    console.error('❌ Erro no processo FFmpeg:', err.message);
+  });
+}
+
+function pararStreamCamera() {
+  if (ffmpegRestartTimeout) {
+    clearTimeout(ffmpegRestartTimeout);
+    ffmpegRestartTimeout = null;
+  }
+  if (ffmpegProcess) {
+    console.log('🛑 Encerrando streaming da câmera...');
+    ffmpegProcess.kill('SIGTERM');
+    ffmpegProcess = null;
+  }
+}
+
+// Endpoint pra verificar status do streaming
+app.get('/api/camera/status', (req, res) => {
+  res.json({
+    streaming: ffmpegProcess !== null,
+    url_hls: `/camera/${path.basename(process.env.HLS_OUTPUT || 'live.m3u8')}`,
+    timestamp: new Date().toISOString()
+  });
 });
 
 // ============================================
@@ -55,6 +176,7 @@ app.get('/api/status', async (req, res) => {
       status: 'online', 
       message: 'Servidor e banco de dados conectados',
       usuarios: rows[0].total,
+      camera_streaming: ffmpegProcess !== null,
       timestamp: new Date().toISOString()
     });
   } catch (err) {
@@ -1089,22 +1211,41 @@ app.use((req, res) => {
 });
 
 // ============================================
+// ENCERRAMENTO LIMPO
+// ============================================
+process.on('SIGINT', () => {
+  console.log('\n🛑 Recebido SIGINT — encerrando...');
+  pararStreamCamera();
+  process.exit(0);
+});
+
+process.on('SIGTERM', () => {
+  console.log('\n🛑 Recebido SIGTERM — encerrando...');
+  pararStreamCamera();
+  process.exit(0);
+});
+
+// ============================================
 // INICIALIZAÇÃO DO SERVIDOR HTTP
 // ============================================
 app.listen(port, '0.0.0.0', async () => {
   console.log('================================================');
   console.log('🚀 SISTEMA DE RECEPÇÃO EMPRESARIAL');
-  console.log('   VERSÃO HTTP');
+  console.log('   VERSÃO HTTP + STREAMING DE CÂMERA');
   console.log('================================================');
-  console.log(`✅ Servidor HTTP rodando`);
+  console.log(`✅ Servidor HTTP rodando na porta ${port}`);
   console.log(`⏰ Iniciado em: ${new Date().toLocaleString('pt-BR')}`);
   
   try {
     await pool.query('SELECT 1');
     console.log('✅ Banco de dados conectado');
     console.log('✅ bcrypt habilitado para validação de senhas');
-    console.log('================================================');
   } catch (err) {
     console.error('❌ Erro ao conectar ao banco:', err.message);
   }
+
+  // Inicia o streaming da câmera (se configurado no .env)
+  iniciarStreamCamera();
+
+  console.log('================================================');
 });
