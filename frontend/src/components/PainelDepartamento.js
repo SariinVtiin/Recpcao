@@ -5,7 +5,7 @@ import './PainelDepartamento.css';
 import confederal from '../assets/confederal.png';
 
 // URL do stream HLS da câmera (servida pelo backend)
-const CAMERA_STREAM_URL = 'http://192.167.1.255:3001/camera/live.m3u8';
+const CAMERA_STREAM_URL = 'http://192.167.0.9:3001/camera/live.m3u8';
 
 // ============================================
 // COMPONENTE: Modal da Câmera
@@ -258,7 +258,7 @@ export default function PainelDepartamento({ usuario, onLogout }) {
   const buscarAguardando = useCallback(async () => {
     try {
       const response = await fetch(
-        `http://192.167.1.255:3001/api/visitas/aguardando/${usuario.departamento_id}`
+        `http://192.167.0.9:3001/api/visitas/aguardando/${usuario.departamento_id}`
       );
       const data = await response.json();
 
@@ -305,7 +305,7 @@ export default function PainelDepartamento({ usuario, onLogout }) {
   const buscarChamados = useCallback(async () => {
     try {
       const response = await fetch(
-        `http://192.167.1.255:3001/api/visitas/chamados/${usuario.departamento_id}`
+        `http://192.167.0.9:3001/api/visitas/chamados/${usuario.departamento_id}`
       );
       const data = await response.json();
 
@@ -339,7 +339,7 @@ export default function PainelDepartamento({ usuario, onLogout }) {
   const buscarFinalizados = useCallback(async () => {
     try {
       const response = await fetch(
-        `http://192.167.1.255:3001/api/visitas?departamento_id=${usuario.departamento_id}&status=finalizado`
+        `http://192.167.0.9:3001/api/visitas?departamento_id=${usuario.departamento_id}&status=finalizado`
       );
       const data = await response.json();
       
@@ -387,7 +387,7 @@ export default function PainelDepartamento({ usuario, onLogout }) {
     setCarregando(true);
     try {
       const response = await fetch(
-        `http://192.167.1.255:3001/api/visitas/${visitaId}/chamar`,
+        `http://192.167.0.9:3001/api/visitas/${visitaId}/chamar`,
         { 
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
@@ -435,7 +435,7 @@ export default function PainelDepartamento({ usuario, onLogout }) {
     setCarregando(true);
     try {
       const response = await fetch(
-        `http://192.167.1.255:3001/api/visitas/${visitaId}/finalizado`,
+        `http://192.167.0.9:3001/api/visitas/${visitaId}/finalizado`,
         { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ usuario_id: usuario.id }) }
       );
 

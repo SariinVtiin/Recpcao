@@ -3,7 +3,7 @@ import { User, Building2, LogOut, Send, IdCard } from 'lucide-react';
 import './PainelRecepcao.css';
 import confederal from '../assets/confederal.png';
 
-const API = 'http://192.167.1.255:3001';
+const API = 'http://192.167.0.9:3001';
 const INATIVIDADE_MS = 4 * 60 * 1000; // 4 minutos
 
 export default function PainelRecepcao({ usuario, onLogout }) {

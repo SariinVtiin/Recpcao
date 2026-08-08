@@ -114,7 +114,7 @@ function iniciarStreamCamera() {
 
 ffmpegProcess = spawn(ffmpegPath, [
     '-rtsp_transport', 'tcp',
-    '-timeout', '5000000',
+    '-timeout', '10000000',
     '-fflags', '+nobuffer',
     '-flags', 'low_delay',
     '-i', rtsp,

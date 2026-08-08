@@ -3,7 +3,7 @@ import { BarChart3, Download, FileDown, ArrowLeft, Columns, Search, X } from 'lu
 import './PainelRelatorio.css';
 import confederal from '../assets/confederal.png';
 
-const API = 'http://192.168.0.126:3001';
+const API = 'http://192.167.0.9:3001';
 
 // ============================================================
 // Definição de todas as colunas disponíveis
